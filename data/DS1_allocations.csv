@@ -1,0 +1,5 @@
+Id,RequirementId,SourceId,BalanceId,StartDate,Tenor,Amount
+1,1,1,,01/01/2016,60,15
+2,2,,1,01/02/2016,105,15
+3,1,,2,01/01/2020,46,15
+4,3,-1 (RCF),,01/03/2016,104,15

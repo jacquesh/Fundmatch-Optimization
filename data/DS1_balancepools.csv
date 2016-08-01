@@ -1,0 +1,8 @@
+Id,Segment,Name,Recorded Date,Total Amount,Limit Percentage,Total Allocatable Amount,,,
+1,IronBankFunds,IronBankFunds,30/06/2015,188463,0.075,14134.725,,,
+,,,,,,,,,
+Id,Segment,BalancePoolId,Recorded Date,Name,Recorded Amount,Loaned Amount on Recorded Date,Total Amount,Limit Percentage,Total Allocatable Amount
+1,IronBankFunds,1,30/06/2015,IronBankFunds_MoneyMarket,10000,15046,25046,0.3,7513.8
+2,IronBankFunds,1,30/06/2015,IronBankFunds_BondsRepo,50000,1564,51564,0.2,10312.8
+3,IronBankFunds,1,30/06/2015,IronBankFunds_Equity,90000,5000,95000,0.1,9500
+4,IronBankFunds,1,30/06/2015,IronBankFunds_Property,15000,1853,16853,0.2,3370.6
