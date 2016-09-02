@@ -24,6 +24,12 @@ struct SourceInfo
     float interestRate;
 };
 
+struct BalancePoolInfo
+{
+    // TODO: Decide what other values we need here (including for Tim)
+    float amount;
+};
+
 struct RequirementInfo
 {
     char* segment;
@@ -49,19 +55,27 @@ struct InputData
 {
     int sourceCount;
     SourceInfo* sources;
+    int balancePoolCount;
+    BalancePoolInfo* balancePools;
     int requirementCount;
     RequirementInfo* requirements;
 };
 
-// Allocates an array of SourceInfo, and puts it into sourceDataOutput.
-// Returns true iff the function succeeded, if false is returned then input will not be modified
+// Allocates an array of SourceInfo, and puts it into input.sources.
+// Returns true iff the function succeeded, if false is returned then input will not be modified.
 bool loadSourceData(const char* inputFilename, InputData& input);
 
-// Allocates an array of RequirementInfo and puts it into requirementDataOutput
-// Returns true iff the function succeeded, if false is returned then input will not be modified
+// Allocates an array of BalancePoolInfo, and puts it into input.balancePools.
+// Returns true iff the function succeeded, if false is returned then input will not be modified.
+bool loadBalancePoolData(const char* inputFilename, InputData& input);
+
+// Allocates an array of RequirementInfo and puts it into input.requirements
+// Returns true iff the function succeeded, if false is returned then input will not be modified.
 bool loadRequirementData(const char* inputFilename, InputData& input);
 
-int computeAllocations(InputData input, AllocationInfo** allocationOutput);
+bool loadAllocationData(const char* inputFilename, AllocationInfo** allocations, int& allocationCount);
+
+void computeAllocations(InputData input, int allocationCount, AllocationInfo* allocationOutput);
 
 // Serialize the sources, requirements and allocations into a JSON string and writes it to file
 void writeOutputData(InputData input, int allocCount, AllocationInfo* allocations,
