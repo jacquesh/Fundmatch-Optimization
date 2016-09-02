@@ -183,69 +183,27 @@ Vector optimizeSwarm(Particle* swarm, int dimensionCount,
     return bestLoc;
 }
 
-bool isAllocationPairValid(SourceInfo& source, RequirementInfo& req)
-{
-    if(source.taxClass != req.taxClass)
-        return false;
-
-    time_t sourceStart = mktime(&source.startDate);
-    time_t requireStart = mktime(&req.startDate);
-    tm sourceEndTm = source.startDate;
-    sourceEndTm.tm_mon += source.tenor;
-    tm reqEndTm = req.startDate;
-    reqEndTm.tm_mon += req.tenor;
-    time_t sourceEnd = mktime(&sourceEndTm);
-    time_t requireEnd = mktime(&reqEndTm);
-
-    if((sourceEnd < requireStart) || (sourceStart > requireEnd))
-        return false;
-
-    return true;
-}
-
-int computeAllocations(InputData inputData, AllocationInfo** allocationOutput)
+void computeAllocations(InputData inputData, int allocationCount, AllocationInfo* allocOutput)
 {
     g_input = inputData;
 
-    int allocationCount = 0;
-    for(int reqID=0; reqID<g_input.requirementCount; reqID++)
+    PSOAllocationPointer* swarmAllocations = new PSOAllocationPointer[allocationCount];
+    for(int i=0; i<allocationCount; i++)
     {
-        for(int sourceID=0; sourceID<g_input.sourceCount; sourceID++)
-        {
-            if(isAllocationPairValid(g_input.sources[sourceID], g_input.requirements[reqID]))
-            {
-                allocationCount++;
-            }
-        }
+        swarmAllocations[i].sourceIndex = allocOutput[i].sourceIndex;
+        swarmAllocations[i].requirementIndex = allocOutput[i].requirementIndex;
+        swarmAllocations[i].balanceIndex = allocOutput[i].balanceIndex;
+        swarmAllocations[i].allocStartDimension = i*3;
     }
 
-    int dimensionCount = allocationCount * 3;
-    PSOAllocationPointer* allocations = new PSOAllocationPointer[allocationCount];
-    int currentAllocIndex = 0;
-    for(int reqID=0; reqID<g_input.requirementCount; reqID++)
-    {
-        for(int sourceID=0; sourceID<g_input.sourceCount; sourceID++)
-        {
-            if(isAllocationPairValid(g_input.sources[sourceID], g_input.requirements[reqID]))
-            {
-                allocations[currentAllocIndex].sourceIndex = sourceID;
-                allocations[currentAllocIndex].requirementIndex = reqID;
-                allocations[currentAllocIndex].balanceIndex = 0;
-                allocations[currentAllocIndex].allocStartDimension = 3*currentAllocIndex;
-                currentAllocIndex++;
-            }
-        }
-    }
-
+    int dimensionCount = allocationCount*3;
     Particle* swarm = new Particle[SWARM_SIZE];
     for(int i=0; i<SWARM_SIZE; i++)
     {
         swarm[i].position.coords = new float[dimensionCount];
         swarm[i].velocity.coords = new float[dimensionCount];
     }
-    Vector bestSolution = optimizeSwarm(swarm, dimensionCount, allocationCount, allocations);
 
-    int nondegenerateAllocationCount = 0;
     for(int i=0; i<allocationCount; i++)
     {
         int tenorVal = (int)bestSolution[allocations[i].allocStartDimension + 1];
@@ -256,30 +214,25 @@ int computeAllocations(InputData inputData, AllocationInfo** allocationOutput)
         }
     }
 
-    AllocationInfo* allocOutput = new AllocationInfo[nondegenerateAllocationCount];
-    int allocOutIndex = 0;
+    Vector bestSolution = optimizeSwarm(swarm, dimensionCount, allocationCount, swarmAllocations);
+
     for(int i=0; i<allocationCount; i++)
     {
-        int allocTenor = (int)bestSolution[allocations[i].allocStartDimension + 1];
-        int allocAmount = (int)bestSolution[allocations[i].allocStartDimension + 2];
+        int allocStartDate = (int)bestSolution[swarmAllocations[i].allocStartDimension + 0];
+        int allocTenor = (int)bestSolution[swarmAllocations[i].allocStartDimension + 1];
+        int allocAmount = (int)bestSolution[swarmAllocations[i].allocStartDimension + 2];
         if((allocTenor <= 0) || (allocAmount <= 0))
             continue;
 
-        tm allocStartDate = {};
-        allocStartDate.tm_mday = 1;
-        allocStartDate.tm_mon = 0;
-        allocStartDate.tm_year = 2011 - 1900;
+        tm allocStarttm = {};
+        allocStarttm.tm_mday = 1;
+        allocStarttm.tm_mon = 0;
+        allocStarttm.tm_year = 2011 - 1900;
 
-        allocOutput[allocOutIndex].sourceIndex = allocations[i].sourceIndex;
-        allocOutput[allocOutIndex].requirementIndex = allocations[i].requirementIndex;
-        allocOutput[allocOutIndex].balanceIndex = allocations[i].balanceIndex;
-        allocOutput[allocOutIndex].startDate = allocStartDate;
-        allocOutput[allocOutIndex].tenor = allocTenor;
-        allocOutput[allocOutIndex].amount = allocAmount;
-
-        allocOutIndex++;
+        allocOutput[i].startDate = allocStarttm;
+        allocOutput[i].tenor = allocTenor;
+        allocOutput[i].amount = allocAmount;
     }
-    *allocationOutput = allocOutput;
 
     for(int i=0; i<SWARM_SIZE; i++)
     {
@@ -287,7 +240,5 @@ int computeAllocations(InputData inputData, AllocationInfo** allocationOutput)
         delete[] swarm[i].velocity.coords;
     }
     delete[] swarm;
-    delete[] allocations;
-
-    return nondegenerateAllocationCount;
+    delete[] swarmAllocations;
 }
