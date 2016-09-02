@@ -78,9 +78,32 @@ bool loadSourceData(const char* inputFilename, InputData& input)
         outArray[i].taxClass = str2TaxClass(csvIn.field(7));
         outArray[i].interestRate = (float)atof(csvIn.field(8));
     }
+
     input.sourceCount = entryCount;
     input.sources = outArray;
+    return true;
+}
 
+bool loadBalancePoolData(const char* inputFilename, InputData& input)
+{
+    CsvReader csvIn;
+    if(!csvIn.initialize(inputFilename))
+        return false;
+
+    int entryCount = csvIn.entryCount();
+    if(entryCount == 0)
+        return false;
+
+    assert(csvIn.fieldCount() == 10);
+    BalancePoolInfo* outArray = new BalancePoolInfo[entryCount];
+    for(int i=0; i<entryCount; i++)
+    {
+        csvIn.readNextEntry();
+        outArray[i].amount = (float)atof(csvIn.field(9));
+    }
+
+    input.balancePoolCount = entryCount;
+    input.balancePools = outArray;
     return true;
 }
 
@@ -114,9 +137,44 @@ bool loadRequirementData(const char* inputFilename, InputData& input)
         csvIn.copyFieldStr(6, &outArray[i].purpose);
         outArray[i].taxClass = str2TaxClass(csvIn.field(7));
     }
+
     input.requirementCount = entryCount;
     input.requirements = outArray;
+    return true;
+}
 
+bool loadAllocationData(const char* inputFilename, AllocationInfo** allocations, int& allocationCount)
+{
+    CsvReader csvIn;
+    if(!csvIn.initialize(inputFilename))
+        return false;
+
+    int entryCount = csvIn.entryCount();
+    if(entryCount == 0)
+        return false;
+
+    assert(csvIn.fieldCount() == 7);
+    AllocationInfo* outArray = new AllocationInfo[entryCount];
+    for(int i=0; i<entryCount; i++)
+    {
+        csvIn.readNextEntry();
+        outArray[i].requirementIndex = atoi(csvIn.field(1));
+        outArray[i].sourceIndex = atoi(csvIn.field(2));
+        outArray[i].balanceIndex = atoi(csvIn.field(3));
+
+        memset(&outArray[i].startDate, 0, sizeof(tm));
+        sscanf(csvIn.field(4), "%d/%d/%d", &outArray[i].startDate.tm_mday,
+                                           &outArray[i].startDate.tm_mon,
+                                           &outArray[i].startDate.tm_year);
+        outArray[i].startDate.tm_mon -= 1; // Month is in the range [0,11] not [1,12]
+        outArray[i].startDate.tm_year -= 1900; // tm_year is the number of years since 1900
+
+        outArray[i].tenor = atoi(csvIn.field(5));
+        outArray[i].amount = atoi(csvIn.field(6));
+    }
+
+    *allocations = outArray;
+    allocationCount = entryCount;
     return true;
 }
 
