@@ -77,7 +77,7 @@ bool loadRequirementData(const char* inputFilename, InputData& input);
 
 bool loadAllocationData(const char* inputFilename, AllocationInfo** allocations, int& allocationCount);
 
-void computeAllocations(InputData input, int allocationCount, AllocationInfo* allocationOutput);
+void computeAllocations(InputData input, int allocationCount, AllocationInfo* allocations);
 
 // Serialize the sources, requirements and allocations into a JSON string and writes it to file
 void writeOutputData(InputData input, int allocCount, AllocationInfo* allocations,
