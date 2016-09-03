@@ -4,6 +4,8 @@
 #include <vector>
 #include <time.h>
 
+const float RCF_INTEREST_RATE = 0.13f;
+
 enum class TaxClass
 {
     None,

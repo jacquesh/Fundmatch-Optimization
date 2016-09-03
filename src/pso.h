@@ -14,8 +14,6 @@ const float SELF_BEST_FACTOR = 0.55f;
 const float NEIGHBOUR_BEST_FACTOR = 0.44f;
 const float GLOBAL_BEST_FACTOR = 0.01f;
 
-const float RCF_INTEREST_RATE = 0.13f;
-
 struct Vector
 {
     float* coords;
