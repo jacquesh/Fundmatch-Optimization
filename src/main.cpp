@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <assert.h>
 
 #include "fundmatch.h"
 bool isAllocationPairValid(SourceInfo& source, RequirementInfo& req)
@@ -36,7 +37,6 @@ int main()
 
     AllocationInfo* manualAllocations;
     int manualAllocationCount;
-
     loadAllocationData("data/DS1_allocations.csv", &manualAllocations, manualAllocationCount);
     printf("Loaded %d allocations\n", manualAllocationCount);
 
@@ -65,6 +65,7 @@ int main()
     {
         for(int balanceID=0; balanceID<input.balancePoolCount; balanceID++)
         {
+            allocations[currentAllocIndex].sourceIndex = -1;
             allocations[currentAllocIndex].requirementIndex = reqID;
             allocations[currentAllocIndex].balanceIndex = balanceID;
             currentAllocIndex++;
@@ -78,10 +79,12 @@ int main()
             {
                 allocations[currentAllocIndex].sourceIndex = sourceID;
                 allocations[currentAllocIndex].requirementIndex = reqID;
+                allocations[currentAllocIndex].balanceIndex = -1;
                 currentAllocIndex++;
             }
         }
     }
+
     printf("Computing values for %d allocations...\n", validAllocationCount);
     computeAllocations(input, validAllocationCount, allocations);
     printf("Complete, writing to file...\n");
