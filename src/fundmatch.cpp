@@ -62,6 +62,9 @@ bool loadSourceData(const char* inputFilename, InputData& input)
     for(int i=0; i<entryCount; i++)
     {
         csvIn.readNextEntry();
+        int sourceID = atoi(csvIn.field(0));
+        assert(sourceID == i+1);
+
         csvIn.copyFieldStr(1, &outArray[i].segment);
 
         memset(&outArray[i].startDate, 0, sizeof(tm));
@@ -99,6 +102,9 @@ bool loadBalancePoolData(const char* inputFilename, InputData& input)
     for(int i=0; i<entryCount; i++)
     {
         csvIn.readNextEntry();
+        int balanceID = atoi(csvIn.field(0));
+        assert(balanceID == i+1);
+
         outArray[i].amount = (float)atof(csvIn.field(9));
     }
 
@@ -122,6 +128,9 @@ bool loadRequirementData(const char* inputFilename, InputData& input)
     for(int i=0; i<entryCount; i++)
     {
         csvIn.readNextEntry();
+        int reqID = atoi(csvIn.field(0));
+        assert(reqID == i+1);
+
         csvIn.copyFieldStr(1, &outArray[i].segment);
 
         memset(&outArray[i].startDate, 0, sizeof(tm));
