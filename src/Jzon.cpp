@@ -503,12 +503,12 @@ namespace Jzon
 	{
 	}
 
-	void Writer::setFormat(const Format &format)
+	void Writer::setFormat(const Format &newFormat)
 	{
-		this->format = format;
-		indentationChar = (format.useTabs ? '\t' : ' ');
-		spacing = (format.spacing ? " " : "");
-		newline = (format.newline ? "\n" : spacing);
+		this->format = newFormat;
+		indentationChar = (newFormat.useTabs ? '\t' : ' ');
+		spacing = (newFormat.spacing ? " " : "");
+		newline = (newFormat.newline ? "\n" : spacing);
 	}
 
 	void Writer::writeStream(const Node &node, std::ostream &stream) const
