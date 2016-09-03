@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <time.h>
 #include <math.h>
+#include <random>
 
-#include "rand.h"
 
 #include "pso.h"
 #include "fundmatch.h"
@@ -82,6 +82,9 @@ float computeFitness(Vector position, int allocationCount, PSOAllocationPointer*
 Vector optimizeSwarm(Particle* swarm, int dimensionCount,
                   int allocCount, PSOAllocationPointer* allocations)
 {
+    std::random_device randDevice;
+    std::mt19937 rng(randDevice());
+    std::uniform_real_distribution<float> uniformf(0.0f, 1.0f);
 
     Vector bestLoc = swarm[0].position; // TODO: Maybe actually compute this correctly here
     float bestFitness = computeFitness(bestLoc, allocCount, allocations);
@@ -126,9 +129,9 @@ Vector optimizeSwarm(Particle* swarm, int dimensionCount,
 
             for(int dim=0; dim<dimensionCount; dim++)
             {
-                float selfFactor = SELF_BEST_FACTOR * randf(&rng);
-                float neighbourFactor = NEIGHBOUR_BEST_FACTOR * randf(&rng);
-                float globalFactor = GLOBAL_BEST_FACTOR * randf(&rng);
+                float selfFactor = SELF_BEST_FACTOR * uniformf(rng);
+                float neighbourFactor = NEIGHBOUR_BEST_FACTOR * uniformf(rng);
+                float globalFactor = GLOBAL_BEST_FACTOR * uniformf(rng);
 
                 currentParticle.velocity.coords[dim] =
                     (VELOCITY_UPDATE_FACTOR * currentParticle.velocity[dim]) +
@@ -174,6 +177,10 @@ void computeAllocations(InputData inputData, int allocationCount, AllocationInfo
     }
 
     for(int i=0; i<allocationCount; i++)
+    std::random_device randDevice;
+    std::mt19937 rng(randDevice());
+    std::uniform_real_distribution<float> uniformf(0.0f, 1.0f);
+    std::uniform_int_distribution<int> uniformi(0, NEIGHBOUR_COUNT);
     for(int i=0; i<SWARM_SIZE; i++)
     {
         for(int allocID=0; allocID<allocationCount; allocID++)
