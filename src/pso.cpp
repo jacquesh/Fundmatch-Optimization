@@ -155,19 +155,21 @@ Vector optimizeSwarm(Particle* swarm, int dimensionCount,
     return bestLoc;
 }
 
-void computeAllocations(InputData inputData, int allocationCount, AllocationInfo* allocOutput)
+void computeAllocations(InputData inputData, int allocationCount, AllocationInfo* allocations)
 {
     g_input = inputData;
 
+    // Create the PSO-specific allocation data
     PSOAllocationPointer* swarmAllocations = new PSOAllocationPointer[allocationCount];
     for(int i=0; i<allocationCount; i++)
     {
-        swarmAllocations[i].sourceIndex = allocOutput[i].sourceIndex;
-        swarmAllocations[i].requirementIndex = allocOutput[i].requirementIndex;
-        swarmAllocations[i].balanceIndex = allocOutput[i].balanceIndex;
+        swarmAllocations[i].sourceIndex = allocations[i].sourceIndex;
+        swarmAllocations[i].requirementIndex = allocations[i].requirementIndex;
+        swarmAllocations[i].balanceIndex = allocations[i].balanceIndex;
         swarmAllocations[i].allocStartDimension = i*3;
     }
 
+    // Create the swarm
     int dimensionCount = allocationCount*3;
     Particle* swarm = new Particle[SWARM_SIZE];
     for(int i=0; i<SWARM_SIZE; i++)
@@ -176,7 +178,7 @@ void computeAllocations(InputData inputData, int allocationCount, AllocationInfo
         swarm[i].velocity.coords = new float[dimensionCount];
     }
 
-    for(int i=0; i<allocationCount; i++)
+    // Initialize the swarm
     std::random_device randDevice;
     std::mt19937 rng(randDevice());
     std::uniform_real_distribution<float> uniformf(0.0f, 1.0f);
@@ -209,8 +211,10 @@ void computeAllocations(InputData inputData, int allocationCount, AllocationInfo
         }
     }
 
+    // Run PSO using our new swarm
     Vector bestSolution = optimizeSwarm(swarm, dimensionCount, allocationCount, swarmAllocations);
 
+    // Convert our swarm info back into allocation data as expected for output
     for(int i=0; i<allocationCount; i++)
     {
         int allocStartDate = (int)bestSolution[swarmAllocations[i].allocStartDimension + 0];
@@ -224,11 +228,12 @@ void computeAllocations(InputData inputData, int allocationCount, AllocationInfo
         allocStarttm.tm_mon = 0;
         allocStarttm.tm_year = 2011 - 1900;
 
-        allocOutput[i].startDate = allocStarttm;
-        allocOutput[i].tenor = allocTenor;
-        allocOutput[i].amount = allocAmount;
+        allocations[i].startDate = allocStarttm;
+        allocations[i].tenor = allocTenor;
+        allocations[i].amount = allocAmount;
     }
 
+    // Cleanup
     for(int i=0; i<SWARM_SIZE; i++)
     {
         delete[] swarm[i].position.coords;
