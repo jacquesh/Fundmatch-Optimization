@@ -82,37 +82,6 @@ float computeFitness(Vector position, int allocationCount, PSOAllocationPointer*
 Vector optimizeSwarm(Particle* swarm, int dimensionCount,
                   int allocCount, PSOAllocationPointer* allocations)
 {
-    // TODO: Surely theres way of getting a reasonable 2nd value for the state (other than time)
-    RNGState rng = { 0x853c49e6748fea9bULL, 0xda3e39cb94b95bdbULL };
-    seedRNG(&rng, time(NULL), rng.inc);
-
-    for(int i=0; i<SWARM_SIZE; i++)
-    {
-        for(int allocID=0; allocID<allocCount; allocID++)
-        {
-            SourceInfo& allocSource = g_input.sources[allocations[allocID].sourceIndex];
-            int startDateDim = allocations[allocID].allocStartDimension;
-            int tenorDim = startDateDim + 1;
-            int amountDim = startDateDim + 2;
-            swarm[i].position.coords[startDateDim] = 0; // TODO
-            swarm[i].velocity.coords[startDateDim] = 0; // TODO
-
-            swarm[i].position.coords[tenorDim] = randf(&rng) * allocSource.tenor;
-            swarm[i].velocity.coords[tenorDim] = randf(&rng) * sqrtf((float)allocSource.tenor);
-
-            swarm[i].position.coords[amountDim] = randf(&rng) * allocSource.amount;
-            swarm[i].velocity.coords[amountDim] = randf(&rng) * sqrtf((float)allocSource.amount);
-        }
-
-        swarm[i].bestSeenLoc = swarm[i].position;
-        swarm[i].bestSeenFitness = computeFitness(swarm[i].position, allocCount, allocations);
-
-        swarm[i].neighbours[0] = &swarm[i];
-        for(int neighbourIndex=1; neighbourIndex<NEIGHBOUR_COUNT; neighbourIndex++)
-        {
-            swarm[i].neighbours[neighbourIndex] = &swarm[randint(&rng, NEIGHBOUR_COUNT)];
-        }
-    }
 
     Vector bestLoc = swarm[0].position; // TODO: Maybe actually compute this correctly here
     float bestFitness = computeFitness(bestLoc, allocCount, allocations);
@@ -205,12 +174,31 @@ void computeAllocations(InputData inputData, int allocationCount, AllocationInfo
     }
 
     for(int i=0; i<allocationCount; i++)
+    for(int i=0; i<SWARM_SIZE; i++)
     {
-        int tenorVal = (int)bestSolution[allocations[i].allocStartDimension + 1];
-        int amountVal = (int)bestSolution[allocations[i].allocStartDimension + 2];
-        if((tenorVal > 0) && (amountVal > 0))
+        for(int allocID=0; allocID<allocationCount; allocID++)
         {
-            nondegenerateAllocationCount++;
+            SourceInfo& allocSource = g_input.sources[swarmAllocations[allocID].sourceIndex];
+            int startDateDim = swarmAllocations[allocID].allocStartDimension;
+            int tenorDim = startDateDim + 1;
+            int amountDim = startDateDim + 2;
+            swarm[i].position.coords[startDateDim] = 0; // TODO
+            swarm[i].velocity.coords[startDateDim] = 0; // TODO
+
+            swarm[i].position.coords[tenorDim] = uniformf(rng) * allocSource.tenor;
+            swarm[i].velocity.coords[tenorDim] = uniformf(rng) * sqrtf((float)allocSource.tenor);
+
+            swarm[i].position.coords[amountDim] = uniformf(rng) * allocSource.amount;
+            swarm[i].velocity.coords[amountDim] = uniformf(rng) * sqrtf((float)allocSource.amount);
+        }
+
+        swarm[i].bestSeenLoc = swarm[i].position;
+        swarm[i].bestSeenFitness = computeFitness(swarm[i].position, allocationCount, swarmAllocations);
+
+        swarm[i].neighbours[0] = &swarm[i];
+        for(int neighbourIndex=1; neighbourIndex<NEIGHBOUR_COUNT; neighbourIndex++)
+        {
+            swarm[i].neighbours[neighbourIndex] = &swarm[uniformi(rng)];
         }
     }
 
