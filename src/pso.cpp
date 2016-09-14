@@ -112,8 +112,8 @@ Vector optimizeSwarm(Particle* swarm, int dimensionCount,
     float bestFitness = computeFitness(bestLoc, allocCount, allocations);
     for(int iteration=0; iteration<MAX_ITERATIONS; iteration++)
     {
-        // TODO: Why is this a separate loop, surely it'd be equivalent (and faster)
-        //       to do this at the beginning of the update loop?
+        // NOTE: We need to do this in a separate loop here first to ensure that all particles
+        //       can compare with the correct best at the start of the current iteration
         for(int particleIndex=0; particleIndex<SWARM_SIZE; particleIndex++)
         {
             float fitness = computeFitness(swarm[particleIndex].position, allocCount, allocations);
