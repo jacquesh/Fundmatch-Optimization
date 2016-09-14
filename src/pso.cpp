@@ -1,11 +1,16 @@
 #include <stdio.h>
 #include <time.h>
 #include <math.h>
-#include <random>
+#include <assert.h>
 
+#include <random>
+#include <vector>
+#include <algorithm>
 
 #include "pso.h"
 #include "fundmatch.h"
+
+using namespace std;
 
 static InputData g_input;
 
@@ -99,9 +104,9 @@ float computeFitness(Vector position, int allocationCount, PSOAllocationPointer*
 Vector optimizeSwarm(Particle* swarm, int dimensionCount,
                   int allocCount, PSOAllocationPointer* allocations)
 {
-    std::random_device randDevice;
-    std::mt19937 rng(randDevice());
-    std::uniform_real_distribution<float> uniformf(0.0f, 1.0f);
+    random_device randDevice;
+    mt19937 rng(randDevice());
+    uniform_real_distribution<float> uniformf(0.0f, 1.0f);
 
     Vector bestLoc = swarm[0].position; // TODO: Maybe actually compute this correctly here
     float bestFitness = computeFitness(bestLoc, allocCount, allocations);
@@ -196,10 +201,10 @@ void computeAllocations(InputData inputData, int allocationCount, AllocationInfo
     }
 
     // Initialize the swarm
-    std::random_device randDevice;
-    std::mt19937 rng(randDevice());
-    std::uniform_real_distribution<float> uniformf(0.0f, 1.0f);
-    std::uniform_int_distribution<int> uniformi(0, NEIGHBOUR_COUNT);
+    random_device randDevice;
+    mt19937 rng(randDevice());
+    uniform_real_distribution<float> uniformf(0.0f, 1.0f);
+    uniform_int_distribution<int> uniformi(0, NEIGHBOUR_COUNT);
     for(int i=0; i<SWARM_SIZE; i++)
     {
         for(int allocID=0; allocID<allocationCount; allocID++)
