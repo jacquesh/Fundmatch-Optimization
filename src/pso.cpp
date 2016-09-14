@@ -209,18 +209,41 @@ void computeAllocations(InputData inputData, int allocationCount, AllocationInfo
     {
         for(int allocID=0; allocID<allocationCount; allocID++)
         {
-            SourceInfo& allocSource = g_input.sources[swarmAllocations[allocID].sourceIndex];
-            int startDateDim = swarmAllocations[allocID].allocStartDimension;
-            int tenorDim = startDateDim + 1;
-            int amountDim = startDateDim + 2;
-            swarm[i].position.coords[startDateDim] = 0; // TODO
-            swarm[i].velocity.coords[startDateDim] = 0; // TODO
+            int allocSourceIndex = swarmAllocations[allocID].sourceIndex;
+            int allocBalanceIndex = swarmAllocations[allocID].balanceIndex;
+            assert(((allocSourceIndex == -1) && (allocBalanceIndex >= 0)) ||
+                    ((allocSourceIndex >= 0) && (allocBalanceIndex == -1)));
 
-            swarm[i].position.coords[tenorDim] = uniformf(rng) * allocSource.tenor;
-            swarm[i].velocity.coords[tenorDim] = uniformf(rng) * sqrtf((float)allocSource.tenor);
+            float maxStartDate = -1; // TODO
+            float maxTenor = -1;
+            float maxAmount = -1;
+            if(allocSourceIndex >= 0)
+            {
+                SourceInfo& allocSource = g_input.sources[allocSourceIndex];
+                maxStartDate = -1; // TODO
+                maxTenor = (float)allocSource.tenor;
+                maxAmount = (float)allocSource.amount;
+            }
+            else // NOTE: By the assert above, we necessarily have a balance pool here
+            {
+                BalancePoolInfo& allocBalance = g_input.balancePools[allocBalanceIndex];
+                maxStartDate = -1; // TODO
+                maxTenor = 1; // TODO
+                maxAmount = (float)allocBalance.amount;
+            }
 
-            swarm[i].position.coords[amountDim] = uniformf(rng) * allocSource.amount;
-            swarm[i].velocity.coords[amountDim] = uniformf(rng) * sqrtf((float)allocSource.amount);
+            int allocStartDim = swarmAllocations[allocID].allocStartDimension;
+            int startDateDim = allocStartDim + START_DATE_OFFSET;
+            int tenorDim = allocStartDim + TENOR_OFFSET;
+            int amountDim = allocStartDim + AMOUNT_OFFSET;
+            swarm[i].position.coords[startDateDim] = uniformf(rng); // TODO
+            swarm[i].velocity.coords[startDateDim] = uniformf(rng); // TODO
+
+            swarm[i].position.coords[tenorDim] = uniformf(rng) * maxTenor;
+            swarm[i].velocity.coords[tenorDim] = uniformf(rng) * sqrtf(maxTenor);
+
+            swarm[i].position.coords[amountDim] = uniformf(rng) * maxAmount;
+            swarm[i].velocity.coords[amountDim] = uniformf(rng) * sqrtf(maxAmount);
         }
 
         swarm[i].bestSeenLoc = swarm[i].position;
