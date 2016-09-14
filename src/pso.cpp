@@ -79,11 +79,8 @@ float computeFitness(Vector position, int allocationCount, PSOAllocationPointer*
     }
 
     // Compute the cost of using the RCF for the outstanding requirement values
-    float avgRemaining = 0.0f;
     for(int i=0; i<g_input.requirementCount; i++)
     {
-        avgRemaining += requirementValRemaining[i];
-
         if(requirementValRemaining[i] <= 0)
         {
             result += -requirementValRemaining[i] * 10000.0f;
@@ -93,8 +90,6 @@ float computeFitness(Vector position, int allocationCount, PSOAllocationPointer*
         int tenor = g_input.requirements[i].tenor;
         result += RCF_INTEREST_RATE * requirementRCFMoneyMonths[i];
     }
-    avgRemaining /= g_input.requirementCount;
-    //printf("Average of %f required still\n", avgRemaining);
     delete[] requirementValRemaining;
     delete[] requirementRCFMoneyMonths;
 
