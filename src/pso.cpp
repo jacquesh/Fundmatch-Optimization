@@ -9,6 +9,23 @@
 
 static InputData g_input;
 
+static const int START_DATE_OFFSET = 0;
+static const int TENOR_OFFSET = 1;
+static const int AMOUNT_OFFSET = 2;
+
+float PSOAllocationPointer::getStartDate(Vector& data)
+{
+    return data[this->allocStartDimension + START_DATE_OFFSET];
+}
+float PSOAllocationPointer::getTenor(Vector& data)
+{
+    return data[this->allocStartDimension + TENOR_OFFSET];
+}
+float PSOAllocationPointer::getAmount(Vector& data)
+{
+    return data[this->allocStartDimension + AMOUNT_OFFSET];
+}
+
 float computeFitness(Vector position, int allocationCount, PSOAllocationPointer* allocations)
 {
     // TODO: This is just a first approximation to how much money the source has available at the time

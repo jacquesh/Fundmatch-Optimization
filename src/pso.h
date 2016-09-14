@@ -41,6 +41,10 @@ struct PSOAllocationPointer
     int requirementIndex;
     int balanceIndex;
     int allocStartDimension; // The index of the dimension where this allocation's data starts
+
+    float getStartDate(Vector& data);
+    float getTenor(Vector& data);
+    float getAmount(Vector& data);
 };
 
 #endif
