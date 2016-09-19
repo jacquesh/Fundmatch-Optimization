@@ -33,6 +33,7 @@ float PSOAllocationPointer::getAmount(Vector& data)
 
 float computeFitness(Vector position, int allocationCount, PSOAllocationPointer* allocations)
 {
+#if 0
     // TODO: This is just a first approximation to how much money the source has available at the time
     float* sourceValRemaining = new float[g_input.sourceCount];
     for(int i=0; i<g_input.sourceCount; i++)
@@ -92,6 +93,7 @@ float computeFitness(Vector position, int allocationCount, PSOAllocationPointer*
     }
     delete[] requirementValRemaining;
     delete[] requirementRCFMoneyMonths;
+#endif
 
     return result;
 }
@@ -263,12 +265,7 @@ void computeAllocations(InputData inputData, int allocationCount, AllocationInfo
         if((allocTenor <= 0) || (allocAmount <= 0))
             continue;
 
-        tm allocStarttm = {};
-        allocStarttm.tm_mday = 1;
-        allocStarttm.tm_mon = 0;
-        allocStarttm.tm_year = 2011 - 1900;
-
-        allocations[i].startDate = allocStarttm;
+        allocations[i].startDate = allocStartDate;
         allocations[i].tenor = allocTenor;
         allocations[i].amount = allocAmount;
     }

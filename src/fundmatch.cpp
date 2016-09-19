@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 #include <string.h>
 #include <assert.h>
 #include <fstream>
@@ -67,12 +66,9 @@ bool loadSourceData(const char* inputFilename, InputData& input)
 
         csvIn.copyFieldStr(1, &outArray[i].segment);
 
-        memset(&outArray[i].startDate, 0, sizeof(tm));
-        sscanf(csvIn.field(2), "%d/%d/%d", &outArray[i].startDate.tm_mday,
-                                           &outArray[i].startDate.tm_mon,
-                                           &outArray[i].startDate.tm_year);
-        outArray[i].startDate.tm_mon -= 1; // Month is in the range [0,11] not [1,12]
-        outArray[i].startDate.tm_year -= 1900; // tm_year is the number of years since 1900
+        int day, month, year;
+        sscanf(csvIn.field(2), "%d/%d/%d", &day, &month, &year);
+        outArray[i].startDate = year*12 + month;
 
         outArray[i].tenor = atoi(csvIn.field(3));
         outArray[i].amount = atoi(csvIn.field(4));
@@ -133,12 +129,9 @@ bool loadRequirementData(const char* inputFilename, InputData& input)
 
         csvIn.copyFieldStr(1, &outArray[i].segment);
 
-        memset(&outArray[i].startDate, 0, sizeof(tm));
-        sscanf(csvIn.field(2), "%d/%d/%d", &outArray[i].startDate.tm_mday,
-                                           &outArray[i].startDate.tm_mon,
-                                           &outArray[i].startDate.tm_year);
-        outArray[i].startDate.tm_mon -= 1; // Month is in the range [0,11] not [1,12]
-        outArray[i].startDate.tm_year -= 1900; // tm_year is the number of years since 1900
+        int day, month, year;
+        sscanf(csvIn.field(2), "%d/%d/%d", &day, &month, &year);
+        outArray[i].startDate = year*12 + month;
 
         outArray[i].tenor = atoi(csvIn.field(3));
         outArray[i].amount = atoi(csvIn.field(4));
@@ -171,12 +164,9 @@ bool loadAllocationData(const char* inputFilename, AllocationInfo** allocations,
         outArray[i].sourceIndex = atoi(csvIn.field(2));
         outArray[i].balanceIndex = atoi(csvIn.field(3));
 
-        memset(&outArray[i].startDate, 0, sizeof(tm));
-        sscanf(csvIn.field(4), "%d/%d/%d", &outArray[i].startDate.tm_mday,
-                                           &outArray[i].startDate.tm_mon,
-                                           &outArray[i].startDate.tm_year);
-        outArray[i].startDate.tm_mon -= 1; // Month is in the range [0,11] not [1,12]
-        outArray[i].startDate.tm_year -= 1900; // tm_year is the number of years since 1900
+        int day, month, year;
+        sscanf(csvIn.field(2), "%d/%d/%d", &day, &month, &year);
+        outArray[i].startDate = year*12 + month;
 
         outArray[i].tenor = atoi(csvIn.field(5));
         outArray[i].amount = atoi(csvIn.field(6));
@@ -197,8 +187,9 @@ void writeOutputData(InputData input, int allocCount, AllocationInfo* allocation
     char dateStr[MAX_DATE_STR_LEN];
     for(int sourceID=0; sourceID<input.sourceCount; sourceID++)
     {
-        strftime(dateStr, MAX_DATE_STR_LEN,
-                 "%d-%m-%Y", &input.sources[sourceID].startDate);
+        int month = input.sources[sourceID].startDate % 12;
+        int year = input.sources[sourceID].startDate / 12;
+        snprintf(dateStr, MAX_DATE_STR_LEN, "01-%02d-%04d", month, year);
 
         Jzon::Node sourceNode = Jzon::object();
         sourceNode.add("startDate", dateStr);
@@ -212,8 +203,9 @@ void writeOutputData(InputData input, int allocCount, AllocationInfo* allocation
     Jzon::Node reqNodeList = Jzon::array();
     for(int reqID=0; reqID<input.requirementCount; reqID++)
     {
-        strftime(dateStr, MAX_DATE_STR_LEN,
-                 "%d-%m-%Y", &input.requirements[reqID].startDate);
+        int month = input.requirements[reqID].startDate % 12;
+        int year = input.requirements[reqID].startDate / 12;
+        snprintf(dateStr, MAX_DATE_STR_LEN, "01-%02d-%04d", month, year);
 
         Jzon::Node reqNode = Jzon::object();
         reqNode.add("startDate", dateStr);
@@ -226,8 +218,9 @@ void writeOutputData(InputData input, int allocCount, AllocationInfo* allocation
     Jzon::Node allocNodeList = Jzon::array();
     for(int allocID=0; allocID<allocCount; allocID++)
     {
-        strftime(dateStr, MAX_DATE_STR_LEN,
-                 "%d-%m-%Y", &allocations[allocID].startDate);
+        int month = allocations[allocID].startDate % 12;
+        int year = allocations[allocID].startDate / 12;
+        snprintf(dateStr, MAX_DATE_STR_LEN, "01-%02d-%04d", month, year);
 
         Jzon::Node allocNode = Jzon::object();
         allocNode.add("sourceIndex", allocations[allocID].sourceIndex);

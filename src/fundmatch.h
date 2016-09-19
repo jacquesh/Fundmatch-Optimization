@@ -2,7 +2,6 @@
 #define _FUNDMATCH_H
 
 #include <vector>
-#include <time.h>
 
 const float RCF_INTEREST_RATE = 0.13f;
 
@@ -17,7 +16,7 @@ enum class TaxClass
 struct SourceInfo
 {
     char* segment;
-    tm startDate;
+    int startDate;
     int tenor;
     int amount;
     char* sourceType;
@@ -35,7 +34,7 @@ struct BalancePoolInfo
 struct RequirementInfo
 {
     char* segment;
-    tm startDate;
+    int startDate;
     int tenor;
     int amount;
     char* tier;
@@ -48,7 +47,7 @@ struct AllocationInfo
     int sourceIndex;
     int requirementIndex;
     int balanceIndex;
-    tm startDate;
+    int startDate;
     int tenor;
     int amount;
 };
