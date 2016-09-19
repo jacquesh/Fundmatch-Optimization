@@ -30,6 +30,11 @@ float PSOAllocationPointer::getAmount(Vector& data)
 {
     return data[this->allocStartDimension + AMOUNT_OFFSET];
 }
+float PSOAllocationPointer::getEndDate(Vector& data)
+{
+    return getStartDate(data) + getTenor(data);
+}
+
 
 float computeFitness(Vector position, int allocationCount, PSOAllocationPointer* allocations)
 {

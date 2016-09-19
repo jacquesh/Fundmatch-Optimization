@@ -45,6 +45,8 @@ struct PSOAllocationPointer
     float getStartDate(Vector& data);
     float getTenor(Vector& data);
     float getAmount(Vector& data);
+
+    float getEndDate(Vector& data);
 };
 
 #endif
