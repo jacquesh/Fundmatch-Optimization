@@ -4,6 +4,7 @@
 #include <vector>
 
 const float RCF_INTEREST_RATE = 0.13f;
+const float BALANCEPOOL_INTEREST_RATE = 0.11f;
 
 enum class TaxClass
 {

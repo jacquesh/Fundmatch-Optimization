@@ -38,67 +38,90 @@ float PSOAllocationPointer::getEndDate(Vector& data)
 
 float computeFitness(Vector position, int allocationCount, PSOAllocationPointer* allocations)
 {
-#if 0
-    // TODO: This is just a first approximation to how much money the source has available at the time
-    float* sourceValRemaining = new float[g_input.sourceCount];
-    for(int i=0; i<g_input.sourceCount; i++)
-    {
-        sourceValRemaining[i] = (float)g_input.sources[i].amount;
-    }
+    // TODO: Should we be passing these by ref into the vector? I don't think theres any reason to
+    //       other than avoid the copying. But we may well want to do that
+    vector<PSOAllocationPointer*> allocationsByStart(allocationCount);
+    for(int i=0; i<allocationCount; i++)
+        allocationsByStart.push_back(&allocations[i]);
+    vector<PSOAllocationPointer*> allocationsByEnd(allocationsByStart);
 
-    float* requirementValRemaining = new float[g_input.requirementCount];
-    float* requirementRCFMoneyMonths = new float[g_input.requirementCount];
+    auto startDateComparison = [&position](PSOAllocationPointer* a, PSOAllocationPointer* b)
+    {
+        return a->getStartDate(position) < b->getStartDate(position);
+    };
+    auto endDateComparison = [&position](PSOAllocationPointer* a, PSOAllocationPointer* b)
+    {
+        return a->getEndDate(position) < b->getEndDate(position);
+    };
+    sort(allocationsByStart.begin(), allocationsByStart.end(), startDateComparison);
+    sort(allocationsByEnd.begin(), allocationsByEnd.end(), endDateComparison);
+
+    float* requirementValueRemaining = new float[g_input.requirementCount];
     for(int i=0; i<g_input.requirementCount; i++)
     {
-        requirementValRemaining[i] = (float)g_input.requirements[i].amount;
-        requirementRCFMoneyMonths[i] = (float)(g_input.requirements[i].amount * g_input.requirements[i].tenor);
+        requirementValueRemaining[i] = (float)g_input.requirements[i].amount;
     }
 
-    // Compute the cost of each allocation
     float result = 0.0f;
-    for(int allocID=0; allocID<allocationCount; allocID++)
+    float currentTime = 0.0f;
+    int allocStartIndex = 0;
+    int allocEndIndex = 0;
+    vector<PSOAllocationPointer*> activeAllocations;
+    while((allocStartIndex < allocationCount) || (allocEndIndex < allocationCount))
     {
-        int sourceID = allocations[allocID].sourceIndex;
-        int reqID = allocations[allocID].requirementIndex;
-        SourceInfo& source = g_input.sources[sourceID];
-        RequirementInfo& requirement = g_input.requirements[reqID];
+        float nextStartTime = -1.0f;
+        float nextEndTime = -1.0f;
+        if(allocStartIndex < allocationCount)
+            nextStartTime = allocationsByStart[allocStartIndex]->getStartDate(position);
+        if(allocEndIndex < allocationCount)
+            nextEndTime = allocationsByEnd[allocEndIndex]->getEndDate(position);
 
-        int startDimension = allocations[allocID].allocStartDimension;
-        float startDate = position[startDimension + 0];
-        float tenor = position[startDimension + 1];
-        float amount = position[startDimension + 2];
+        float previousTime = currentTime;
+        currentTime = min(nextStartTime, nextEndTime);
+        float timeOffset = currentTime - previousTime;
 
-        sourceValRemaining[sourceID] -= amount;
-        requirementValRemaining[reqID] -= amount;
-        requirementRCFMoneyMonths[reqID] -= tenor*amount;
-        result += amount*source.interestRate*tenor;
-    }
-
-    // Do some basic penalization for over-using a source
-    // TODO: Remove/replace with better constraint handling
-    for(int i=0; i<g_input.sourceCount; i++)
-    {
-        if(sourceValRemaining[i] < 0)
+        for(int j=0; j<activeAllocations.size(); j++)
         {
-            result += -sourceValRemaining[i] * 10000.0f;
+            PSOAllocationPointer* activeAlloc = activeAllocations[j];
+            float interestRate = BALANCEPOOL_INTEREST_RATE;
+            if(activeAlloc->sourceIndex != -1)
+                interestRate = g_input.sources[activeAlloc->sourceIndex].interestRate;
+
+            result += timeOffset * activeAlloc->getAmount(position) * interestRate;
+        }
+
+        if(nextEndTime <= nextStartTime)
+        {
+            PSOAllocationPointer* alloc = nullptr;
+            for(auto iter = activeAllocations.begin(); iter != activeAllocations.end(); iter++)
+            {
+                if(*iter == allocationsByEnd[allocEndIndex])
+                {
+                    alloc = *iter;
+                    activeAllocations.erase(iter);
+                    break;
+                }
+            }
+            allocEndIndex++;
+            assert(alloc != nullptr);
+            requirementValueRemaining[alloc->requirementIndex] += alloc->getAmount(position);
+        }
+        else
+        {
+            // Process the start event
+            PSOAllocationPointer* alloc = allocationsByStart[allocStartIndex];
+            activeAllocations.push_back(alloc);
+            allocStartIndex++;
+            requirementValueRemaining[alloc->requirementIndex] -= alloc->getAmount(position);
+        }
+
+        for(int reqID=0; reqID<g_input.requirementCount; reqID++)
+        {
+            result += timeOffset * requirementValueRemaining[reqID] * RCF_INTEREST_RATE;
         }
     }
 
-    // Compute the cost of using the RCF for the outstanding requirement values
-    for(int i=0; i<g_input.requirementCount; i++)
-    {
-        if(requirementValRemaining[i] <= 0)
-        {
-            result += -requirementValRemaining[i] * 10000.0f;
-            continue;
-        }
-
-        int tenor = g_input.requirements[i].tenor;
-        result += RCF_INTEREST_RATE * requirementRCFMoneyMonths[i];
-    }
-    delete[] requirementValRemaining;
-    delete[] requirementRCFMoneyMonths;
-#endif
+    delete[] requirementValueRemaining;
 
     return result;
 }
