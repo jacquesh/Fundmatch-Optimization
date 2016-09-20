@@ -45,41 +45,76 @@ float computeFitness(Vector position, int allocationCount, PSOAllocationPointer*
         allocationsByStart.push_back(&allocations[i]);
     vector<PSOAllocationPointer*> allocationsByEnd(allocationsByStart);
 
-    auto startDateComparison = [&position](PSOAllocationPointer* a, PSOAllocationPointer* b)
+    auto allocStartDateComparison = [&position](PSOAllocationPointer* a, PSOAllocationPointer* b)
     {
         return a->getStartDate(position) < b->getStartDate(position);
     };
-    auto endDateComparison = [&position](PSOAllocationPointer* a, PSOAllocationPointer* b)
+    auto allocEndDateComparison = [&position](PSOAllocationPointer* a, PSOAllocationPointer* b)
     {
         return a->getEndDate(position) < b->getEndDate(position);
     };
-    sort(allocationsByStart.begin(), allocationsByStart.end(), startDateComparison);
-    sort(allocationsByEnd.begin(), allocationsByEnd.end(), endDateComparison);
+    sort(allocationsByStart.begin(), allocationsByStart.end(), allocStartDateComparison);
+    sort(allocationsByEnd.begin(), allocationsByEnd.end(), allocEndDateComparison);
+
+    vector<int> requirementsByStart(g_input.requirementCount);
+    for(int i=0; i<g_input.requirementCount; i++)
+        requirementsByStart.push_back(i);
+    vector<int> requirementsByEnd(requirementsByStart);
+    auto reqStartDateComparison = [&position](int reqIndexA, int reqIndexB)
+    {
+        int aStart = g_input.requirements[reqIndexA].startDate;
+        int bStart = g_input.requirements[reqIndexB].startDate;
+        return aStart < bStart;
+    };
+    auto reqEndDateComparison = [&position](int reqIndexA, int reqIndexB)
+    {
+        int aEnd = g_input.requirements[reqIndexA].startDate + g_input.requirements[reqIndexA].tenor;
+        int bEnd = g_input.requirements[reqIndexB].startDate + g_input.requirements[reqIndexB].tenor;
+        return aEnd < bEnd;
+    };
+    sort(requirementsByStart.begin(), requirementsByStart.end(), reqStartDateComparison);
+    sort(requirementsByEnd.begin(), requirementsByEnd.end(), reqEndDateComparison);
 
     float* requirementValueRemaining = new float[g_input.requirementCount];
     for(int i=0; i<g_input.requirementCount; i++)
     {
         requirementValueRemaining[i] = (float)g_input.requirements[i].amount;
     }
+    bool* requirementActive = new bool[g_input.requirementCount];
+    for(int i=0; i<g_input.requirementCount; i++)
+        requirementActive[i] = true;
 
     float result = 0.0f;
     float currentTime = 0.0f;
     int allocStartIndex = 0;
     int allocEndIndex = 0;
+    int reqStartIndex = 0;
+    int reqEndIndex = 0;
     vector<PSOAllocationPointer*> activeAllocations;
     while((allocStartIndex < allocationCount) || (allocEndIndex < allocationCount))
     {
-        float nextStartTime = -1.0f;
-        float nextEndTime = -1.0f;
+        float nextAllocStartTime = -1.0f;
+        float nextAllocEndTime = -1.0f;
+        float nextReqStartTime = -1.0f;
+        float nextReqEndTime = -1.0f;
         if(allocStartIndex < allocationCount)
-            nextStartTime = allocationsByStart[allocStartIndex]->getStartDate(position);
+            nextAllocStartTime = allocationsByStart[allocStartIndex]->getStartDate(position);
         if(allocEndIndex < allocationCount)
-            nextEndTime = allocationsByEnd[allocEndIndex]->getEndDate(position);
+            nextAllocEndTime = allocationsByEnd[allocEndIndex]->getEndDate(position);
+        if(reqStartIndex < g_input.requirementCount)
+            nextReqStartTime = (float)g_input.requirements[reqStartIndex].startDate;
+        if(reqEndIndex < g_input.requirementCount)
+            nextReqEndTime = (float)g_input.requirements[reqEndIndex].startDate +
+                             (float)g_input.requirements[reqEndIndex].tenor;
+
+        float nextAllocEventTime = min(nextAllocStartTime, nextAllocEndTime);
+        float nextReqEventTime = min(nextReqStartTime, nextReqEndTime);
 
         float previousTime = currentTime;
-        currentTime = min(nextStartTime, nextEndTime);
-        float timeOffset = currentTime - previousTime;
+        currentTime = min(nextAllocEventTime, nextReqEventTime);
+        float timeElapsed = currentTime - previousTime;
 
+        // Add up the costs of the allocations for this timestep
         for(int j=0; j<activeAllocations.size(); j++)
         {
             PSOAllocationPointer* activeAlloc = activeAllocations[j];
@@ -87,41 +122,68 @@ float computeFitness(Vector position, int allocationCount, PSOAllocationPointer*
             if(activeAlloc->sourceIndex != -1)
                 interestRate = g_input.sources[activeAlloc->sourceIndex].interestRate;
 
-            result += timeOffset * activeAlloc->getAmount(position) * interestRate;
+            result += timeElapsed * activeAlloc->getAmount(position) * interestRate;
         }
 
-        if(nextEndTime <= nextStartTime)
+        // Add the cost of the unsatisfied requirements (IE the cost to satisfy them via RCF)
+        for(int reqID=0; reqID<g_input.requirementCount; reqID++)
         {
-            PSOAllocationPointer* alloc = nullptr;
-            for(auto iter = activeAllocations.begin(); iter != activeAllocations.end(); iter++)
+            if(requirementActive[reqID])
+                result += timeElapsed * requirementValueRemaining[reqID] * RCF_INTEREST_RATE;
+        }
+
+        // Handle the event that we stopped on, depending on what type it is
+        if(nextReqEventTime <= nextAllocEventTime)
+        {
+            // Handle the requirement event
+            if(nextReqEndTime <= nextReqStartTime)
             {
-                if(*iter == allocationsByEnd[allocEndIndex])
-                {
-                    alloc = *iter;
-                    activeAllocations.erase(iter);
-                    break;
-                }
+                // Handle the requirement-end event
+                int reqIndex = requirementsByEnd[reqEndIndex];
+                requirementActive[reqIndex] = false;
+                reqEndIndex++;
             }
-            allocEndIndex++;
-            assert(alloc != nullptr);
-            requirementValueRemaining[alloc->requirementIndex] += alloc->getAmount(position);
+            else
+            {
+                // Handle the requirement-start event
+                int reqIndex = requirementsByStart[reqStartIndex];
+                requirementActive[reqIndex] = true;
+                reqStartIndex++;
+            }
         }
         else
         {
-            // Process the start event
-            PSOAllocationPointer* alloc = allocationsByStart[allocStartIndex];
-            activeAllocations.push_back(alloc);
-            allocStartIndex++;
-            requirementValueRemaining[alloc->requirementIndex] -= alloc->getAmount(position);
-        }
-
-        for(int reqID=0; reqID<g_input.requirementCount; reqID++)
-        {
-            result += timeOffset * requirementValueRemaining[reqID] * RCF_INTEREST_RATE;
+            // Handle the allocation event
+            if(nextAllocEndTime <= nextAllocStartTime)
+            {
+                // Handle the allocation-end event
+                PSOAllocationPointer* alloc = nullptr;
+                for(auto iter = activeAllocations.begin(); iter != activeAllocations.end(); iter++)
+                {
+                    if(*iter == allocationsByEnd[allocEndIndex])
+                    {
+                        alloc = *iter;
+                        activeAllocations.erase(iter);
+                        break;
+                    }
+                }
+                assert(alloc != nullptr);
+                allocEndIndex++;
+                requirementValueRemaining[alloc->requirementIndex] += alloc->getAmount(position);
+            }
+            else
+            {
+                // Handle the allocation-start event
+                PSOAllocationPointer* alloc = allocationsByStart[allocStartIndex];
+                activeAllocations.push_back(alloc);
+                allocStartIndex++;
+                requirementValueRemaining[alloc->requirementIndex] -= alloc->getAmount(position);
+            }
         }
     }
 
     delete[] requirementValueRemaining;
+    delete[] requirementActive;
 
     return result;
 }
