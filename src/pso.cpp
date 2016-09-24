@@ -2,6 +2,7 @@
 #include <time.h>
 #include <math.h>
 #include <assert.h>
+#include <float.h>
 
 #include <random>
 #include <vector>
@@ -40,7 +41,7 @@ float computeFitness(Vector position, int allocationCount, PSOAllocationPointer*
 {
     // TODO: Should we be passing these by ref into the vector? I don't think theres any reason to
     //       other than avoid the copying. But we may well want to do that
-    vector<PSOAllocationPointer*> allocationsByStart(allocationCount);
+    vector<PSOAllocationPointer*> allocationsByStart;
     for(int i=0; i<allocationCount; i++)
         allocationsByStart.push_back(&allocations[i]);
     vector<PSOAllocationPointer*> allocationsByEnd(allocationsByStart);
@@ -56,7 +57,7 @@ float computeFitness(Vector position, int allocationCount, PSOAllocationPointer*
     sort(allocationsByStart.begin(), allocationsByStart.end(), allocStartDateComparison);
     sort(allocationsByEnd.begin(), allocationsByEnd.end(), allocEndDateComparison);
 
-    vector<int> requirementsByStart(g_input.requirementCount);
+    vector<int> requirementsByStart;
     for(int i=0; i<g_input.requirementCount; i++)
         requirementsByStart.push_back(i);
     vector<int> requirementsByEnd(requirementsByStart);
@@ -93,10 +94,10 @@ float computeFitness(Vector position, int allocationCount, PSOAllocationPointer*
     vector<PSOAllocationPointer*> activeAllocations;
     while((allocStartIndex < allocationCount) || (allocEndIndex < allocationCount))
     {
-        float nextAllocStartTime = -1.0f;
-        float nextAllocEndTime = -1.0f;
-        float nextReqStartTime = -1.0f;
-        float nextReqEndTime = -1.0f;
+        float nextAllocStartTime = FLT_MAX;
+        float nextAllocEndTime = FLT_MAX;
+        float nextReqStartTime = FLT_MAX;
+        float nextReqEndTime = FLT_MAX;
         if(allocStartIndex < allocationCount)
             nextAllocStartTime = allocationsByStart[allocStartIndex]->getStartDate(position);
         if(allocEndIndex < allocationCount)
