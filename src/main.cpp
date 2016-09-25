@@ -2,6 +2,8 @@
 #include <assert.h>
 
 #include "fundmatch.h"
+#include "platform.h"
+
 bool isAllocationPairValid(SourceInfo& source, RequirementInfo& req)
 {
     if(source.taxClass != req.taxClass)
@@ -21,6 +23,9 @@ bool isAllocationPairValid(SourceInfo& source, RequirementInfo& req)
 
 int main()
 {
+    int64_t clockFrequency = getClockFrequency();
+    int64_t loadStartTime = getClockValue();
+
     InputData input = {};
     loadSourceData("data/DS1_sources.csv", input);
     printf("Loaded %d sources\n", input.sourceCount);
@@ -77,9 +82,16 @@ int main()
         }
     }
 
+    int64_t loadEndTime = getClockValue();
+    float loadSeconds = (float)(loadEndTime-loadStartTime)/(float)clockFrequency;
+    printf("Input data loaded in %.2fs\n", loadSeconds);
+
     printf("Computing values for %d allocations...\n", validAllocationCount);
     computeAllocations(input, validAllocationCount, allocations);
-    printf("Complete, writing to file...\n");
+
+    int64_t computeEndTime = getClockValue();
+    float computeSeconds = (float)(computeEndTime - loadEndTime)/(float)clockFrequency;
+    printf("Optimization completed in %.2fs\n", computeSeconds);
 
     writeOutputData(input, validAllocationCount, allocations, "output.json");
 }
