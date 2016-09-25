@@ -143,7 +143,11 @@ float computeFitness(Vector position, int allocationCount, PSOAllocationPointer*
         else
         {
             // Handle the allocation event
-            if(nextAllocEndTime <= nextAllocStartTime)
+            // NOTE: It is significant that this is a strict inequality, because for very small
+            //       tenor, we still want to handle the allocation start first
+            // TODO: This will break if we every get a negative tenor, we currently don't
+            //       check that solutions are feasible before computing cost, that needs to be done
+            if(nextAllocEndTime < nextAllocStartTime)
             {
                 // Handle the allocation-end event
                 PSOAllocationPointer* alloc = nullptr;
