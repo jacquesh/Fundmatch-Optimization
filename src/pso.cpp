@@ -15,6 +15,9 @@ using namespace std;
 
 static InputData g_input;
 
+static vector<int> requirementsByStart;
+static vector<int> requirementsByEnd;
+
 static const int START_DATE_OFFSET = 0;
 static const int TENOR_OFFSET = 1;
 static const int AMOUNT_OFFSET = 2;
@@ -56,25 +59,6 @@ float computeFitness(Vector position, int allocationCount, PSOAllocationPointer*
     };
     sort(allocationsByStart.begin(), allocationsByStart.end(), allocStartDateComparison);
     sort(allocationsByEnd.begin(), allocationsByEnd.end(), allocEndDateComparison);
-
-    vector<int> requirementsByStart;
-    for(int i=0; i<g_input.requirementCount; i++)
-        requirementsByStart.push_back(i);
-    vector<int> requirementsByEnd(requirementsByStart);
-    auto reqStartDateComparison = [&position](int reqIndexA, int reqIndexB)
-    {
-        int aStart = g_input.requirements[reqIndexA].startDate;
-        int bStart = g_input.requirements[reqIndexB].startDate;
-        return aStart < bStart;
-    };
-    auto reqEndDateComparison = [&position](int reqIndexA, int reqIndexB)
-    {
-        int aEnd = g_input.requirements[reqIndexA].startDate + g_input.requirements[reqIndexA].tenor;
-        int bEnd = g_input.requirements[reqIndexB].startDate + g_input.requirements[reqIndexB].tenor;
-        return aEnd < bEnd;
-    };
-    sort(requirementsByStart.begin(), requirementsByStart.end(), reqStartDateComparison);
-    sort(requirementsByEnd.begin(), requirementsByEnd.end(), reqEndDateComparison);
 
     float* requirementValueRemaining = new float[g_input.requirementCount];
     for(int i=0; i<g_input.requirementCount; i++)
@@ -287,6 +271,25 @@ void computeAllocations(InputData inputData, int allocationCount, AllocationInfo
         swarm[i].position.coords = new float[dimensionCount];
         swarm[i].velocity.coords = new float[dimensionCount];
     }
+
+    // Set up the sorted requirements lists so we don't have to do this in the fitness function
+    for(int i=0; i<g_input.requirementCount; i++)
+        requirementsByStart.push_back(i);
+    requirementsByEnd = vector<int>(requirementsByStart);
+    auto reqStartDateComparison = [](int reqIndexA, int reqIndexB)
+    {
+        int aStart = g_input.requirements[reqIndexA].startDate;
+        int bStart = g_input.requirements[reqIndexB].startDate;
+        return aStart < bStart;
+    };
+    auto reqEndDateComparison = [](int reqIndexA, int reqIndexB)
+    {
+        int aEnd = g_input.requirements[reqIndexA].startDate + g_input.requirements[reqIndexA].tenor;
+        int bEnd = g_input.requirements[reqIndexB].startDate + g_input.requirements[reqIndexB].tenor;
+        return aEnd < bEnd;
+    };
+    sort(requirementsByStart.begin(), requirementsByStart.end(), reqStartDateComparison);
+    sort(requirementsByEnd.begin(), requirementsByEnd.end(), reqEndDateComparison);
 
     // Initialize the swarm
     random_device randDevice;
