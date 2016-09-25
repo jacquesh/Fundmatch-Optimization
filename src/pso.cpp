@@ -67,16 +67,20 @@ float computeFitness(Vector position, int allocationCount, PSOAllocationPointer*
     }
     bool* requirementActive = new bool[g_input.requirementCount];
     for(int i=0; i<g_input.requirementCount; i++)
-        requirementActive[i] = true;
+        requirementActive[i] = false;
+
+    float firstAllocationTime = allocationsByStart[0]->getStartDate(position);
+    float firstRequirementTime = (float)g_input.requirements[requirementsByStart[0]].startDate;
 
     float result = 0.0f;
-    float currentTime = 0.0f;
+    float currentTime = min(firstAllocationTime, firstRequirementTime);
     int allocStartIndex = 0;
     int allocEndIndex = 0;
     int reqStartIndex = 0;
     int reqEndIndex = 0;
     vector<PSOAllocationPointer*> activeAllocations;
-    while((allocStartIndex < allocationCount) || (allocEndIndex < allocationCount))
+    while((allocStartIndex < allocationCount) || (allocEndIndex < allocationCount) ||
+          (reqStartIndex < g_input.requirementCount) || (reqEndIndex < g_input.requirementCount))
     {
         float nextAllocStartTime = FLT_MAX;
         float nextAllocEndTime = FLT_MAX;
@@ -291,6 +295,12 @@ void computeAllocations(InputData inputData, int allocationCount, AllocationInfo
     sort(requirementsByStart.begin(), requirementsByStart.end(), reqStartDateComparison);
     sort(requirementsByEnd.begin(), requirementsByEnd.end(), reqEndDateComparison);
 
+    RequirementInfo& firstReq = g_input.requirements[requirementsByStart[0]];
+    RequirementInfo& lastReq = g_input.requirements[requirementsByEnd[g_input.requirementCount-1]];
+    int minReqDate = firstReq.startDate;
+    int maxReqDate = lastReq.startDate + lastReq.tenor;
+    assert(maxReqDate > minReqDate);
+
     // Initialize the swarm
     random_device randDevice;
     mt19937 rng(randDevice());
@@ -305,20 +315,24 @@ void computeAllocations(InputData inputData, int allocationCount, AllocationInfo
             assert(((allocSourceIndex == -1) && (allocBalanceIndex >= 0)) ||
                     ((allocSourceIndex >= 0) && (allocBalanceIndex == -1)));
 
-            float maxStartDate = -1; // TODO
+            float minStartDate = (float)minReqDate;
+            float maxStartDate = (float)maxReqDate;
             float maxTenor = -1;
             float maxAmount = -1;
             if(allocSourceIndex >= 0)
             {
                 SourceInfo& allocSource = g_input.sources[allocSourceIndex];
-                maxStartDate = -1; // TODO
+                int sourceEndDate = allocSource.startDate + allocSource.tenor;
+                if(allocSource.startDate > minReqDate)
+                    minStartDate = (float)allocSource.startDate;
+                if(sourceEndDate < maxReqDate)
+                    maxStartDate = (float)sourceEndDate;
                 maxTenor = (float)allocSource.tenor;
                 maxAmount = (float)allocSource.amount;
             }
             else // NOTE: By the assert above, we necessarily have a balance pool here
             {
                 BalancePoolInfo& allocBalance = g_input.balancePools[allocBalanceIndex];
-                maxStartDate = -1; // TODO
                 maxTenor = 1; // TODO
                 maxAmount = (float)allocBalance.amount;
             }
@@ -327,8 +341,9 @@ void computeAllocations(InputData inputData, int allocationCount, AllocationInfo
             int startDateDim = allocStartDim + START_DATE_OFFSET;
             int tenorDim = allocStartDim + TENOR_OFFSET;
             int amountDim = allocStartDim + AMOUNT_OFFSET;
-            swarm[i].position.coords[startDateDim] = uniformf(rng); // TODO
-            swarm[i].velocity.coords[startDateDim] = uniformf(rng); // TODO
+            float dateRange = maxStartDate - minStartDate;
+            swarm[i].position.coords[startDateDim] = minStartDate + (uniformf(rng) * dateRange);
+            swarm[i].velocity.coords[startDateDim] = uniformf(rng) * sqrtf(dateRange); // TODO
 
             swarm[i].position.coords[tenorDim] = uniformf(rng) * maxTenor;
             swarm[i].velocity.coords[tenorDim] = uniformf(rng) * sqrtf(maxTenor);
