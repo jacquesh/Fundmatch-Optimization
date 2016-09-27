@@ -219,15 +219,14 @@ Vector optimizeSwarm(Particle* swarm, int dimensionCount,
             Vector globalBestLoc = bestLoc;
 
             Vector neighbourBestLoc = currentParticle.neighbours[0]->bestSeenLoc;
-            float neighbourBestFitness = computeFitness(neighbourBestLoc, allocCount, allocations);
+            float neighbourBestFitness = currentParticle.neighbours[0]->bestSeenFitness;
             for(int neighbourIndex=1; neighbourIndex<NEIGHBOUR_COUNT; neighbourIndex++)
             {
-                Vector tempNeighbourBestLoc = currentParticle.neighbours[neighbourIndex]->bestSeenLoc;
-                float tempNeighbourBestFitness = computeFitness(tempNeighbourBestLoc, allocCount, allocations);
-                if(tempNeighbourBestFitness < neighbourBestFitness)
+                Particle* currentNeighbour = currentParticle.neighbours[neighbourIndex];
+                if(currentNeighbour->bestSeenFitness < neighbourBestFitness)
                 {
-                    neighbourBestFitness = tempNeighbourBestFitness;
-                    neighbourBestLoc = tempNeighbourBestLoc;
+                    neighbourBestFitness = currentNeighbour->bestSeenFitness;
+                    neighbourBestLoc = currentNeighbour->bestSeenLoc;;
                 }
             }
 
