@@ -117,7 +117,7 @@ float computeFitness(Vector position, int allocationCount, PSOAllocationPointer*
         // Add the cost of the unsatisfied requirements (IE the cost to satisfy them via RCF)
         for(int reqID=0; reqID<g_input.requirementCount; reqID++)
         {
-            if(requirementActive[reqID])
+            if(requirementActive[reqID] && (requirementValueRemaining[reqID] > 0.0f))
                 result += timeElapsed * requirementValueRemaining[reqID] * RCF_INTEREST_RATE;
         }
 
