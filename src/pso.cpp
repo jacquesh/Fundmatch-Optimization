@@ -192,6 +192,7 @@ Vector optimizeSwarm(Particle* swarm, int dimensionCount,
     float bestFitness = computeFitness(bestLoc, allocCount, allocations);
     for(int iteration=0; iteration<MAX_ITERATIONS; iteration++)
     {
+        // Compute the fitness of each particle, updating its best seen as necessary
         // NOTE: We need to do this in a separate loop here first to ensure that all particles
         //       can compare with the correct best at the start of the current iteration
         for(int particleIndex=0; particleIndex<SWARM_SIZE; particleIndex++)
@@ -210,6 +211,7 @@ Vector optimizeSwarm(Particle* swarm, int dimensionCount,
             }
         }
 
+        // Update particle velocities based on known best positions
         for(int particleIndex=0; particleIndex<SWARM_SIZE; particleIndex++)
         {
             Particle& currentParticle = swarm[particleIndex];
@@ -233,22 +235,21 @@ Vector optimizeSwarm(Particle* swarm, int dimensionCount,
             {
                 float selfFactor = SELF_BEST_FACTOR * uniformf(rng);
                 float neighbourFactor = NEIGHBOUR_BEST_FACTOR * uniformf(rng);
-                float globalFactor = GLOBAL_BEST_FACTOR * uniformf(rng);
 
-                currentParticle.velocity.coords[dim] =
-                    (VELOCITY_UPDATE_FACTOR * currentParticle.velocity[dim]) +
+                currentParticle.velocity.coords[dim] = CONSTRICTION_COEFFICIENT * (
+                    currentParticle.velocity[dim] +
                     (selfFactor * (localBestLoc[dim] - currentParticle.position[dim])) +
-                    (neighbourFactor * (neighbourBestLoc[dim] - currentParticle.position[dim])) +
-                    (globalFactor * (globalBestLoc[dim] - currentParticle.position[dim]));
+                    (neighbourFactor * (neighbourBestLoc[dim] - currentParticle.position[dim]))
+                    );
             }
         }
 
+        // Do a timestep of particle movement
         for(int particleIndex=0; particleIndex<SWARM_SIZE; particleIndex++)
         {
             for(int dim=0; dim<dimensionCount; dim++)
             {
-                swarm[particleIndex].position.coords[dim] +=
-                    TIMESTEP * swarm[particleIndex].velocity[dim];
+                swarm[particleIndex].position.coords[dim] += swarm[particleIndex].velocity[dim];
             }
         }
     }
