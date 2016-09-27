@@ -39,6 +39,29 @@ float PSOAllocationPointer::getEndDate(Vector& data)
     return getStartDate(data) + getTenor(data);
 }
 
+bool isFeasible(Vector position, int allocationCount, PSOAllocationPointer* allocations)
+{
+    for(int allocID=0; allocID<allocationCount; allocID++)
+    {
+        SourceInfo& source = g_input.sources[allocations[allocID].sourceIndex];
+        RequirementInfo& req = g_input.requirements[allocations[allocID].requirementIndex];
+        float startDate = allocations[allocID].getStartDate(position);
+        float tenor = allocations[allocID].getTenor(position);
+        float amount = allocations[allocID].getAmount(position);
+
+        // TODO: We also need to check:
+        //       - That we don't overuse a particular source
+        //       - What else?
+        if(startDate < 0.0f)
+            return false;
+        if(tenor < 0.0f)
+            return false;
+        if((amount < 0.0f) || (amount > source.amount))
+            return false;
+    }
+
+    return true;
+}
 
 float computeFitness(Vector position, int allocationCount, PSOAllocationPointer* allocations)
 {
@@ -197,6 +220,9 @@ Vector optimizeSwarm(Particle* swarm, int dimensionCount,
         //       can compare with the correct best at the start of the current iteration
         for(int particleIndex=0; particleIndex<SWARM_SIZE; particleIndex++)
         {
+            if(!isFeasible(swarm[particleIndex].position, allocCount, allocations))
+                continue;
+
             float fitness = computeFitness(swarm[particleIndex].position, allocCount, allocations);
             if(fitness < bestFitness)
             {
@@ -356,6 +382,8 @@ void computeAllocations(InputData inputData, int allocationCount, AllocationInfo
             swarm[i].velocity.coords[amountDim] = uniformf(rng) * sqrtf(maxAmount);
         }
 
+        // NOTE: We just make sure to only generate random positions within the feasible region
+        assert(isFeasible(swarm[i].position, allocationCount, swarmAllocations));
         swarm[i].bestSeenLoc = swarm[i].position;
         swarm[i].bestSeenFitness = computeFitness(swarm[i].position, allocationCount, swarmAllocations);
 
