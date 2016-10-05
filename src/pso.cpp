@@ -25,6 +25,47 @@ static const int START_DATE_OFFSET = 0;
 static const int TENOR_OFFSET = 1;
 static const int AMOUNT_OFFSET = 2;
 
+Vector::Vector(int dimCount)
+    : dimensions(dimCount)
+{
+    this->coords = new float[dimensions];
+}
+
+Vector::Vector(const Vector& other)
+    : dimensions(other.dimensions)
+{
+    this->coords = new float[this->dimensions];
+    memcpy(this->coords, other.coords, this->dimensions*sizeof(float));
+}
+
+Vector::~Vector()
+{
+    if(coords)
+    {
+        delete[] coords;
+    }
+}
+
+Vector& Vector::operator =(const Vector& other)
+{
+    this->~Vector();
+    this->dimensions = other.dimensions;
+    this->coords = new float[this->dimensions];
+    memcpy(this->coords, other.coords, this->dimensions*sizeof(float));
+
+    return *this;
+}
+
+Particle::Particle()
+    : position(0), velocity(0), bestSeenLoc(0)
+{
+}
+
+Particle::Particle(int dimCount)
+    : position(dimCount), velocity(dimCount), bestSeenLoc(dimCount)
+{
+}
+
 float PSOAllocationPointer::getStartDate(Vector& data)
 {
     return data[this->allocStartDimension + START_DATE_OFFSET];
@@ -46,30 +87,106 @@ bool isFeasible(Vector position, int allocationCount, PSOAllocationPointer* allo
 {
     for(int allocID=0; allocID<allocationCount; allocID++)
     {
+        // TODO: Balance pools
         SourceInfo& source = g_input.sources[allocations[allocID].sourceIndex];
         RequirementInfo& req = g_input.requirements[allocations[allocID].requirementIndex];
-        float startDate = allocations[allocID].getStartDate(position);
-        float tenor = allocations[allocID].getTenor(position);
-        float amount = allocations[allocID].getAmount(position);
+        float allocStart = allocations[allocID].getStartDate(position);
+        float allocEnd = allocations[allocID].getEndDate(position);
+        float allocTenor = allocations[allocID].getTenor(position);
+        float allocAmount = allocations[allocID].getAmount(position);
 
-        // TODO: We also need to check:
-        //       - That we don't overuse a particular source
-        //       - What else?
-        if(startDate < 0.0f)
+        float sourceStart = (float)source.startDate;
+        float sourceEnd = (float)(source.startDate + source.tenor);
+        float sourceAmount = (float)source.amount;
+
+        if((allocStart < sourceStart) || (allocStart > sourceEnd))
             return false;
-        if(tenor < 0.0f)
+        if((allocTenor < 0.0f) || (allocEnd > sourceEnd))
             return false;
-        if((amount < 0.0f) || (amount > source.amount))
+        if((allocAmount < 0.0f) || (allocAmount > sourceAmount))
             return false;
     }
+
+    // Check that no sources ever get over-used (IE 2 allocations with value 300 from a source of 500 at the same time)
+    vector<PSOAllocationPointer*> allocationsByStart;
+    for(int i=0; i<allocationCount; i++)
+        allocationsByStart.push_back(&allocations[i]);
+    vector<PSOAllocationPointer*> allocationsByEnd(allocationsByStart);
+
+    auto allocStartDateComparison = [&position](PSOAllocationPointer* a, PSOAllocationPointer* b)
+    {
+        return a->getStartDate(position) < b->getStartDate(position);
+    };
+    auto allocEndDateComparison = [&position](PSOAllocationPointer* a, PSOAllocationPointer* b)
+    {
+        return a->getEndDate(position) < b->getEndDate(position);
+    };
+    sort(allocationsByStart.begin(), allocationsByStart.end(), allocStartDateComparison);
+    sort(allocationsByEnd.begin(), allocationsByEnd.end(), allocEndDateComparison);
+
+    float* sourceValueRemaining = new float[g_input.sourceCount];
+    for(int i=0; i<g_input.sourceCount; i++)
+    {
+        sourceValueRemaining[i] = (float)g_input.sources[i].amount;
+    }
+
+    int allocStartIndex = 0;
+    int allocEndIndex = 0;
+    vector<PSOAllocationPointer*> activeAllocations;
+    while((allocStartIndex < allocationCount) || (allocEndIndex < allocationCount))
+    {
+        float nextAllocStartTime = FLT_MAX;
+        float nextAllocEndTime = FLT_MAX;
+        if(allocStartIndex < allocationCount)
+            nextAllocStartTime = allocationsByStart[allocStartIndex]->getStartDate(position);
+        if(allocEndIndex < allocationCount)
+            nextAllocEndTime = allocationsByEnd[allocEndIndex]->getEndDate(position);
+
+        // Handle the allocation event
+        // NOTE: It is significant that this is a strict inequality, because for very small
+        //       tenor, we still want to handle the allocation start first
+        // TODO: Balance pools
+        if(nextAllocEndTime < nextAllocStartTime)
+        {
+            if(allocationsByEnd[allocEndIndex]->sourceIndex >= 0)
+            {
+                // Handle the allocation-end event
+                PSOAllocationPointer* alloc = nullptr;
+                for(auto iter = activeAllocations.begin(); iter != activeAllocations.end(); iter++)
+                {
+                    if(*iter == allocationsByEnd[allocEndIndex])
+                    {
+                        alloc = *iter;
+                        activeAllocations.erase(iter);
+                        break;
+                    }
+                }
+                assert(alloc != nullptr);
+                sourceValueRemaining[alloc->sourceIndex] += alloc->getAmount(position);
+            }
+            allocEndIndex++;
+        }
+        else
+        {
+            // Handle the allocation-start event
+            PSOAllocationPointer* alloc = allocationsByStart[allocStartIndex];
+            allocStartIndex++;
+            if(alloc->sourceIndex >= 0)
+            {
+                activeAllocations.push_back(alloc);
+                sourceValueRemaining[alloc->sourceIndex] -= alloc->getAmount(position);
+                if(sourceValueRemaining[alloc->sourceIndex] < 0.0f)
+                    return false;
+            }
+        }
+    }
+    delete[] sourceValueRemaining;
 
     return true;
 }
 
 float computeFitness(Vector position, int allocationCount, PSOAllocationPointer* allocations)
 {
-    // TODO: Should we be passing these by ref into the vector? I don't think theres any reason to
-    //       other than avoid the copying. But we may well want to do that
     vector<PSOAllocationPointer*> allocationsByStart;
     for(int i=0; i<allocationCount; i++)
         allocationsByStart.push_back(&allocations[i]);
@@ -306,8 +423,7 @@ void computeAllocations(InputData inputData, int allocationCount, AllocationInfo
     Particle* swarm = new Particle[SWARM_SIZE];
     for(int i=0; i<SWARM_SIZE; i++)
     {
-        swarm[i].position.coords = new float[dimensionCount];
-        swarm[i].velocity.coords = new float[dimensionCount];
+        swarm[i] = Particle(dimensionCount);
     }
 
     // Set up the sorted requirements lists so we don't have to do this in the fitness function
@@ -416,11 +532,6 @@ void computeAllocations(InputData inputData, int allocationCount, AllocationInfo
     }
 
     // Cleanup
-    for(int i=0; i<SWARM_SIZE; i++)
-    {
-        delete[] swarm[i].position.coords;
-        delete[] swarm[i].velocity.coords;
-    }
     delete[] swarm;
     delete[] swarmAllocations;
 }
