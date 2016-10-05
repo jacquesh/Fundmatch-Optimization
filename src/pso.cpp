@@ -331,8 +331,24 @@ Vector optimizeSwarm(Particle* swarm, int dimensionCount,
     mt19937 rng(randDevice());
     uniform_real_distribution<float> uniformf(0.0f, 1.0f);
 
-    Vector bestLoc = swarm[0].position; // TODO: Maybe actually compute this correctly here
-    float bestFitness = computeFitness(bestLoc, allocCount, allocations);
+    // Compute the best position on the initial swarm positions
+    int bestFitnessIndex = -1;
+    float bestFitness = FLT_MAX;
+    for(int particleIndex=0; particleIndex<SWARM_SIZE; particleIndex++)
+    {
+        assert(isFeasible(swarm[particleIndex].position, allocCount, allocations));
+
+        float fitness = computeFitness(swarm[particleIndex].position, allocCount, allocations);
+        if(fitness < bestFitness)
+        {
+            bestFitness = fitness;
+            bestFitnessIndex = particleIndex;
+        }
+    }
+    assert(bestFitnessIndex >= 0);
+    Vector bestLoc = swarm[bestFitnessIndex].position;
+    plotLog.log("%d %.2f\n", -1, bestFitness);
+
     for(int iteration=0; iteration<MAX_ITERATIONS; iteration++)
     {
         // Compute the fitness of each particle, updating its best seen as necessary
@@ -455,6 +471,7 @@ void computeAllocations(InputData inputData, int allocationCount, AllocationInfo
     random_device randDevice;
     mt19937 rng(randDevice());
     uniform_real_distribution<float> uniformf(0.0f, 1.0f);
+    uniform_real_distribution<float> centredUniformf(-1.0f, 1.0f);
     uniform_int_distribution<int> uniformi(0, NEIGHBOUR_COUNT);
     for(int i=0; i<SWARM_SIZE; i++)
     {
@@ -492,14 +509,18 @@ void computeAllocations(InputData inputData, int allocationCount, AllocationInfo
             int tenorDim = allocStartDim + TENOR_OFFSET;
             int amountDim = allocStartDim + AMOUNT_OFFSET;
             float dateRange = maxStartDate - minStartDate;
-            swarm[i].position.coords[startDateDim] = minStartDate + (uniformf(rng) * dateRange);
-            swarm[i].velocity.coords[startDateDim] = uniformf(rng) * sqrtf(dateRange); // TODO
+            float startDate = minStartDate + (uniformf(rng) * dateRange);
+            swarm[i].position.coords[startDateDim] = startDate;
+            swarm[i].velocity.coords[startDateDim] = centredUniformf(rng) * dateRange;
 
-            swarm[i].position.coords[tenorDim] = uniformf(rng) * maxTenor;
-            swarm[i].velocity.coords[tenorDim] = uniformf(rng) * sqrtf(maxTenor);
+            float maxValidStartingTenor = maxStartDate - startDate;
+            // TODO: Generate a tenor that is based on the generated start date, so that we're
+            //       always feasible just after initialization
+            swarm[i].position.coords[tenorDim] = uniformf(rng) * maxValidStartingTenor;
+            swarm[i].velocity.coords[tenorDim] = centredUniformf(rng) * maxTenor;
 
             swarm[i].position.coords[amountDim] = uniformf(rng) * maxAmount;
-            swarm[i].velocity.coords[amountDim] = uniformf(rng) * sqrtf(maxAmount);
+            swarm[i].velocity.coords[amountDim] = centredUniformf(rng) * maxAmount;
         }
 
         // NOTE: We just make sure to only generate random positions within the feasible region
