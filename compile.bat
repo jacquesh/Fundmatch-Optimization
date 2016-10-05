@@ -3,7 +3,7 @@
 set CompileFlags= -nologo -Zi -GR- -Gm- -EHsc- -W4 -I../include -I../src -wd4100 -wd4189 -D_CRT_SECURE_NO_WARNINGS
 set LinkFlags= -INCREMENTAL:NO
 
-set CompileFiles=..\src\pso.cpp ..\src\main.cpp ..\src\fundmatch.cpp ..\src\platform.cpp ..\src\Jzon.cpp
+set CompileFiles=..\src\pso.cpp ..\src\main.cpp ..\src\fundmatch.cpp ..\src\platform.cpp ..\src\logging.cpp ..\src\Jzon.cpp
 
 IF NOT EXIST build mkdir build
 pushd build

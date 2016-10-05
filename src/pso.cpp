@@ -10,10 +10,13 @@
 
 #include "pso.h"
 #include "fundmatch.h"
+#include "logging.h"
 
 using namespace std;
 
 static InputData g_input;
+
+static FileLogger plotLog = FileLogger("pso_fitness.dat");
 
 static vector<int> requirementsByStart;
 static vector<int> requirementsByEnd;
@@ -236,6 +239,7 @@ Vector optimizeSwarm(Particle* swarm, int dimensionCount,
                 swarm[particleIndex].bestSeenLoc = swarm[particleIndex].position;
             }
         }
+        plotLog.log("%d %.2f\n", iteration, bestFitness);
 
         // Update particle velocities based on known best positions
         for(int particleIndex=0; particleIndex<SWARM_SIZE; particleIndex++)
