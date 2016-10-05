@@ -36,10 +36,12 @@ int main()
     loadRequirementData("data/DS1_requirements.csv", input);
     printf("Loaded %d requirements\n", input.requirementCount);
 
+#if 0
     AllocationInfo* manualAllocations;
     int manualAllocationCount;
     loadAllocationData("data/DS1_allocations.csv", &manualAllocations, manualAllocationCount);
     printf("Loaded %d allocations\n", manualAllocationCount);
+#endif
 
     // NOTE: First allocations are from balance pools in our valid allocation list
     int validAllocationCount = input.balancePoolCount * input.requirementCount;
@@ -54,8 +56,12 @@ int main()
         }
     }
 
-    AllocationInfo* allocations = new AllocationInfo[validAllocationCount];
-    memset(allocations, 0, validAllocationCount*sizeof(AllocationInfo));
+    AllocationPointer* allocations = new AllocationPointer[validAllocationCount];
+    memset(allocations, 0, validAllocationCount*sizeof(AllocationPointer));
+    for(int i=0; i<validAllocationCount; i++)
+    {
+        allocations[i].allocStartDimension = i*DIMENSIONS_PER_ALLOCATION;
+    }
 
     int currentAllocIndex = 0;
     for(int reqID=0; reqID<input.requirementCount; reqID++)
@@ -87,11 +93,11 @@ int main()
     printf("Input data loaded in %.2fs\n", loadSeconds);
 
     printf("Computing values for %d allocations...\n", validAllocationCount);
-    computeAllocations(input, validAllocationCount, allocations);
+    Vector solution = computeAllocations(input, validAllocationCount, allocations);
 
     int64_t computeEndTime = getClockValue();
     float computeSeconds = (float)(computeEndTime - loadEndTime)/(float)clockFrequency;
     printf("Optimization completed in %.2fs\n", computeSeconds);
 
-    writeOutputData(input, validAllocationCount, allocations, "output.json");
+    writeOutputData(input, validAllocationCount, allocations, solution, "output.json");
 }
