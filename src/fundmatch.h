@@ -82,13 +82,15 @@ struct AllocationPointer
 // TODO: Convert to vector<infotype> instead of arrays
 struct InputData
 {
-    int sourceCount;
-    SourceInfo* sources;
-    int balancePoolCount;
-    BalancePoolInfo* balancePools;
-    int requirementCount;
-    RequirementInfo* requirements;
+    std::vector<SourceInfo> sources;
+    std::vector<BalancePoolInfo> balancePools;
+    std::vector<RequirementInfo> requirements;
+
+    std::vector<int> requirementsByStart;
+    std::vector<int> requirementsByEnd;
 };
+
+extern InputData g_input;
 
 // Allocates an array of SourceInfo, and puts it into input.sources.
 // Returns true iff the function succeeded, if false is returned then input will not be modified.
@@ -104,7 +106,13 @@ bool loadRequirementData(const char* inputFilename, InputData& input);
 
 //bool loadAllocationData(const char* inputFilename, AllocationInfo** allocations, int& allocationCount);
 
-Vector computeAllocations(InputData input, int allocationCount, AllocationPointer* allocations);
+Vector computeAllocations(int allocationCount, AllocationPointer* allocations);
+
+// Returns true iff the given position vector and allocation set is feasible
+bool isFeasible(Vector position, int allocationCount, AllocationPointer* allocations);
+
+// Returns the fitness (total interest cost) of the given position vector and allocation set
+float computeFitness(Vector position, int allocationCount, AllocationPointer* allocations);
 
 // Serialize the sources, requirements and allocations into a JSON string and writes it to file
 void writeOutputData(InputData input, int allocCount, AllocationPointer* allocations,

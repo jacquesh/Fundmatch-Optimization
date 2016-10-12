@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+
 #include <fstream>
+#include <vector>
 
 #include "jzon.h"
 
@@ -11,9 +13,13 @@
 
 #include "fundmatch.h"
 
+using namespace std;
+
 static const int START_DATE_OFFSET = 0;
 static const int TENOR_OFFSET = 1;
 static const int AMOUNT_OFFSET = 2;
+
+InputData g_input;
 
 Vector::Vector(int dimCount)
     : dimensions(dimCount)
@@ -117,8 +123,8 @@ bool isFeasible(Vector position, int allocationCount, AllocationPointer* allocat
     sort(allocationsByStart.begin(), allocationsByStart.end(), allocStartDateComparison);
     sort(allocationsByEnd.begin(), allocationsByEnd.end(), allocEndDateComparison);
 
-    float* sourceValueRemaining = new float[g_input.sourceCount];
-    for(int i=0; i<g_input.sourceCount; i++)
+    float* sourceValueRemaining = new float[g_input.sources.size()];
+    for(int i=0; i<g_input.sources.size(); i++)
     {
         sourceValueRemaining[i] = (float)g_input.sources[i].amount;
     }
@@ -196,17 +202,17 @@ float computeFitness(Vector position, int allocationCount, AllocationPointer* al
     sort(allocationsByStart.begin(), allocationsByStart.end(), allocStartDateComparison);
     sort(allocationsByEnd.begin(), allocationsByEnd.end(), allocEndDateComparison);
 
-    float* requirementValueRemaining = new float[g_input.requirementCount];
-    for(int i=0; i<g_input.requirementCount; i++)
+    float* requirementValueRemaining = new float[g_input.requirements.size()];
+    for(int i=0; i<g_input.requirements.size(); i++)
     {
         requirementValueRemaining[i] = (float)g_input.requirements[i].amount;
     }
-    bool* requirementActive = new bool[g_input.requirementCount];
-    for(int i=0; i<g_input.requirementCount; i++)
+    bool* requirementActive = new bool[g_input.requirements.size()];
+    for(int i=0; i<g_input.requirements.size(); i++)
         requirementActive[i] = false;
 
     float firstAllocationTime = allocationsByStart[0]->getStartDate(position);
-    float firstRequirementTime = (float)g_input.requirements[requirementsByStart[0]].startDate;
+    float firstRequirementTime = (float)g_input.requirements[g_input.requirementsByStart[0]].startDate;
 
     float result = 0.0f;
     float currentTime = min(firstAllocationTime, firstRequirementTime);
@@ -216,7 +222,7 @@ float computeFitness(Vector position, int allocationCount, AllocationPointer* al
     int reqEndIndex = 0;
     vector<AllocationPointer*> activeAllocations;
     while((allocStartIndex < allocationCount) || (allocEndIndex < allocationCount) ||
-          (reqStartIndex < g_input.requirementCount) || (reqEndIndex < g_input.requirementCount))
+          (reqStartIndex < g_input.requirements.size()) || (reqEndIndex < g_input.requirements.size()))
     {
         float nextAllocStartTime = FLT_MAX;
         float nextAllocEndTime = FLT_MAX;
@@ -226,9 +232,9 @@ float computeFitness(Vector position, int allocationCount, AllocationPointer* al
             nextAllocStartTime = allocationsByStart[allocStartIndex]->getStartDate(position);
         if(allocEndIndex < allocationCount)
             nextAllocEndTime = allocationsByEnd[allocEndIndex]->getEndDate(position);
-        if(reqStartIndex < g_input.requirementCount)
+        if(reqStartIndex < g_input.requirements.size())
             nextReqStartTime = (float)g_input.requirements[reqStartIndex].startDate;
-        if(reqEndIndex < g_input.requirementCount)
+        if(reqEndIndex < g_input.requirements.size())
             nextReqEndTime = (float)g_input.requirements[reqEndIndex].startDate +
                              (float)g_input.requirements[reqEndIndex].tenor;
 
@@ -251,7 +257,7 @@ float computeFitness(Vector position, int allocationCount, AllocationPointer* al
         }
 
         // Add the cost of the unsatisfied requirements (IE the cost to satisfy them via RCF)
-        for(int reqID=0; reqID<g_input.requirementCount; reqID++)
+        for(int reqID=0; reqID<g_input.requirements.size(); reqID++)
         {
             if(requirementActive[reqID] && (requirementValueRemaining[reqID] > 0.0f))
                 result += timeElapsed * requirementValueRemaining[reqID] * RCF_INTEREST_RATE;
@@ -264,14 +270,14 @@ float computeFitness(Vector position, int allocationCount, AllocationPointer* al
             if(nextReqEndTime <= nextReqStartTime)
             {
                 // Handle the requirement-end event
-                int reqIndex = requirementsByEnd[reqEndIndex];
+                int reqIndex = g_input.requirementsByEnd[reqEndIndex];
                 requirementActive[reqIndex] = false;
                 reqEndIndex++;
             }
             else
             {
                 // Handle the requirement-start event
-                int reqIndex = requirementsByStart[reqStartIndex];
+                int reqIndex = g_input.requirementsByStart[reqStartIndex];
                 requirementActive[reqIndex] = true;
                 reqStartIndex++;
             }
@@ -363,29 +369,29 @@ bool loadSourceData(const char* inputFilename, InputData& input)
         return false;
 
     assert(csvIn.fieldCount() == 9);
-    SourceInfo* outArray = new SourceInfo[entryCount];
     for(int i=0; i<entryCount; i++)
     {
+        SourceInfo newInfo = {};
         csvIn.readNextEntry();
         int sourceID = atoi(csvIn.field(0));
         assert(sourceID == i+1);
 
-        csvIn.copyFieldStr(1, &outArray[i].segment);
+        csvIn.copyFieldStr(1, &newInfo.segment);
 
         int day, month, year;
         sscanf(csvIn.field(2), "%d/%d/%d", &day, &month, &year);
-        outArray[i].startDate = year*12 + month;
+        newInfo.startDate = year*12 + month;
 
-        outArray[i].tenor = atoi(csvIn.field(3));
-        outArray[i].amount = atoi(csvIn.field(4));
-        csvIn.copyFieldStr(5, &outArray[i].sourceType);
-        csvIn.copyFieldStr(6, &outArray[i].sourceTypeCategory);
-        outArray[i].taxClass = str2TaxClass(csvIn.field(7));
-        outArray[i].interestRate = (float)atof(csvIn.field(8));
+        newInfo.tenor = atoi(csvIn.field(3));
+        newInfo.amount = atoi(csvIn.field(4));
+        csvIn.copyFieldStr(5, &newInfo.sourceType);
+        csvIn.copyFieldStr(6, &newInfo.sourceTypeCategory);
+        newInfo.taxClass = str2TaxClass(csvIn.field(7));
+        newInfo.interestRate = (float)atof(csvIn.field(8));
+
+        input.sources.push_back(newInfo);
     }
 
-    input.sourceCount = entryCount;
-    input.sources = outArray;
     return true;
 }
 
@@ -400,18 +406,18 @@ bool loadBalancePoolData(const char* inputFilename, InputData& input)
         return false;
 
     assert(csvIn.fieldCount() == 10);
-    BalancePoolInfo* outArray = new BalancePoolInfo[entryCount];
     for(int i=0; i<entryCount; i++)
     {
+        BalancePoolInfo newInfo = {};
         csvIn.readNextEntry();
         int balanceID = atoi(csvIn.field(0));
         assert(balanceID == i+1);
 
-        outArray[i].amount = (float)atof(csvIn.field(9));
+        newInfo.amount = (float)atof(csvIn.field(9));
+
+        input.balancePools.push_back(newInfo);
     }
 
-    input.balancePoolCount = entryCount;
-    input.balancePools = outArray;
     return true;
 }
 
@@ -426,28 +432,29 @@ bool loadRequirementData(const char* inputFilename, InputData& input)
         return false;
 
     assert(csvIn.fieldCount() == 8);
-    RequirementInfo* outArray = new RequirementInfo[entryCount];
     for(int i=0; i<entryCount; i++)
     {
+        RequirementInfo newInfo = {};
+
         csvIn.readNextEntry();
         int reqID = atoi(csvIn.field(0));
         assert(reqID == i+1);
 
-        csvIn.copyFieldStr(1, &outArray[i].segment);
+        csvIn.copyFieldStr(1, &newInfo.segment);
 
         int day, month, year;
         sscanf(csvIn.field(2), "%d/%d/%d", &day, &month, &year);
-        outArray[i].startDate = year*12 + month;
+        newInfo.startDate = year*12 + month;
 
-        outArray[i].tenor = atoi(csvIn.field(3));
-        outArray[i].amount = atoi(csvIn.field(4));
-        csvIn.copyFieldStr(5, &outArray[i].tier);
-        csvIn.copyFieldStr(6, &outArray[i].purpose);
-        outArray[i].taxClass = str2TaxClass(csvIn.field(7));
+        newInfo.tenor = atoi(csvIn.field(3));
+        newInfo.amount = atoi(csvIn.field(4));
+        csvIn.copyFieldStr(5, &newInfo.tier);
+        csvIn.copyFieldStr(6, &newInfo.purpose);
+        newInfo.taxClass = str2TaxClass(csvIn.field(7));
+
+        input.requirements.push_back(newInfo);
     }
 
-    input.requirementCount = entryCount;
-    input.requirements = outArray;
     return true;
 }
 
@@ -463,24 +470,25 @@ bool loadAllocationData(const char* inputFilename, AllocationInfo** allocations,
         return false;
 
     assert(csvIn.fieldCount() == 7);
-    AllocationInfo* outArray = new AllocationInfo[entryCount];
     for(int i=0; i<entryCount; i++)
     {
+        AllocationInfo newInfo = {};
+
         csvIn.readNextEntry();
-        outArray[i].requirementIndex = atoi(csvIn.field(1));
-        outArray[i].sourceIndex = atoi(csvIn.field(2));
-        outArray[i].balanceIndex = atoi(csvIn.field(3));
+        newInfo.requirementIndex = atoi(csvIn.field(1));
+        newInfo.sourceIndex = atoi(csvIn.field(2));
+        newInfo.balanceIndex = atoi(csvIn.field(3));
 
         int day, month, year;
         sscanf(csvIn.field(2), "%d/%d/%d", &day, &month, &year);
-        outArray[i].startDate = year*12 + month;
+        newInfo.startDate = year*12 + month;
 
-        outArray[i].tenor = atoi(csvIn.field(5));
-        outArray[i].amount = atoi(csvIn.field(6));
+        newInfo.tenor = atoi(csvIn.field(5));
+        newInfo.amount = atoi(csvIn.field(6));
+
+        allocations.push_back(newInfo);
     }
 
-    *allocations = outArray;
-    allocationCount = entryCount;
     return true;
 }
 #endif
@@ -493,7 +501,7 @@ void writeOutputData(InputData input, int allocCount, AllocationPointer* allocat
     Jzon::Node sourceNodeList = Jzon::array();
     const int MAX_DATE_STR_LEN = 12;
     char dateStr[MAX_DATE_STR_LEN];
-    for(int sourceID=0; sourceID<input.sourceCount; sourceID++)
+    for(int sourceID=0; sourceID<input.sources.size(); sourceID++)
     {
         int month = input.sources[sourceID].startDate % 12;
         int year = input.sources[sourceID].startDate / 12;
@@ -509,7 +517,7 @@ void writeOutputData(InputData input, int allocCount, AllocationPointer* allocat
     }
 
     Jzon::Node reqNodeList = Jzon::array();
-    for(int reqID=0; reqID<input.requirementCount; reqID++)
+    for(int reqID=0; reqID<input.requirements.size(); reqID++)
     {
         int month = input.requirements[reqID].startDate % 12;
         int year = input.requirements[reqID].startDate / 12;

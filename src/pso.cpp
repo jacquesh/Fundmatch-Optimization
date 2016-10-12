@@ -5,8 +5,6 @@
 #include <float.h>
 
 #include <random>
-#include <vector>
-#include <algorithm>
 
 #include "pso.h"
 #include "fundmatch.h"
@@ -14,12 +12,7 @@
 
 using namespace std;
 
-static InputData g_input;
-
 static FileLogger plotLog = FileLogger("pso_fitness.dat");
-
-static vector<int> requirementsByStart;
-static vector<int> requirementsByEnd;
 
 Particle::Particle()
     : position(0), velocity(0), bestSeenLoc(0)
@@ -127,10 +120,8 @@ Vector optimizeSwarm(Particle* swarm, int dimensionCount,
     return bestLoc;
 }
 
-Vector computeAllocations(InputData inputData, int allocationCount, AllocationPointer* allocations)
+Vector computeAllocations(int allocationCount, AllocationPointer* allocations)
 {
-    g_input = inputData;
-
     // Create the swarm
     int dimensionCount = allocationCount * DIMENSIONS_PER_ALLOCATION;
     Particle* swarm = new Particle[SWARM_SIZE];
@@ -139,27 +130,8 @@ Vector computeAllocations(InputData inputData, int allocationCount, AllocationPo
         swarm[i] = Particle(dimensionCount);
     }
 
-    // Set up the sorted requirements lists so we don't have to do this in the fitness function
-    for(int i=0; i<g_input.requirementCount; i++)
-        requirementsByStart.push_back(i);
-    requirementsByEnd = vector<int>(requirementsByStart);
-    auto reqStartDateComparison = [](int reqIndexA, int reqIndexB)
-    {
-        int aStart = g_input.requirements[reqIndexA].startDate;
-        int bStart = g_input.requirements[reqIndexB].startDate;
-        return aStart < bStart;
-    };
-    auto reqEndDateComparison = [](int reqIndexA, int reqIndexB)
-    {
-        int aEnd = g_input.requirements[reqIndexA].startDate + g_input.requirements[reqIndexA].tenor;
-        int bEnd = g_input.requirements[reqIndexB].startDate + g_input.requirements[reqIndexB].tenor;
-        return aEnd < bEnd;
-    };
-    sort(requirementsByStart.begin(), requirementsByStart.end(), reqStartDateComparison);
-    sort(requirementsByEnd.begin(), requirementsByEnd.end(), reqEndDateComparison);
-
-    RequirementInfo& firstReq = g_input.requirements[requirementsByStart[0]];
-    RequirementInfo& lastReq = g_input.requirements[requirementsByEnd[g_input.requirementCount-1]];
+    RequirementInfo& firstReq = g_input.requirements[g_input.requirementsByStart[0]];
+    RequirementInfo& lastReq = g_input.requirements[g_input.requirementsByEnd[g_input.requirements.size()-1]];
     int minReqDate = firstReq.startDate;
     int maxReqDate = lastReq.startDate + lastReq.tenor;
     assert(maxReqDate > minReqDate);
