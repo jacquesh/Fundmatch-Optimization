@@ -22,6 +22,12 @@ bool isAllocationPairValid(SourceInfo& source, RequirementInfo& req)
     return true;
 }
 
+int min(int a, int b)
+{
+    if(a < b)
+        return a;
+    return b;
+}
 
 int main()
 {
@@ -123,10 +129,13 @@ int main()
 
     printf("Computing values for %d allocations...\n", validAllocationCount);
     Vector solution = computeAllocations(validAllocationCount, allocations);
+    assert(isFeasible(solution, validAllocationCount, allocations));
+    float solutionFitness = computeFitness(solution, validAllocationCount, allocations);
 
     int64_t computeEndTime = getClockValue();
     float computeSeconds = (float)(computeEndTime - loadEndTime)/(float)clockFrequency;
-    printf("Optimization completed in %.2fs\n", computeSeconds);
+    printf("Optimization completed in %.2fs - final fitness was %f\n",
+            computeSeconds, solutionFitness);
 
     writeOutputData(g_input, validAllocationCount, allocations, solution, "output.json");
 }

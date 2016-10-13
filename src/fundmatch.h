@@ -2,6 +2,7 @@
 #define _FUNDMATCH_H
 
 #include <vector>
+#include <random>
 
 const float RCF_INTEREST_RATE = 0.13f;
 const float BALANCEPOOL_INTEREST_RATE = 0.11f;
@@ -55,6 +56,7 @@ struct Vector
         return coords[index];
     }
 
+    Vector();
     Vector(int dimCount);
     Vector(const Vector& other);
     ~Vector();
@@ -106,6 +108,11 @@ bool loadRequirementData(const char* inputFilename, InputData& input);
 
 //bool loadAllocationData(const char* inputFilename, AllocationInfo** allocations, int& allocationCount);
 
+// Gives valid initial values to the given position vector, using the given random generators
+void initializeAllocation(AllocationPointer& alloc, Vector& position,
+        std::uniform_real_distribution<float>& uniformf, std::mt19937& rng);
+
+// Returns a Vector containing the final best solution for the parameters to be optimized
 Vector computeAllocations(int allocationCount, AllocationPointer* allocations);
 
 // Returns true iff the given position vector and allocation set is feasible

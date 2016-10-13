@@ -115,8 +115,6 @@ Vector optimizeSwarm(Particle* swarm, int dimensionCount,
             }
         }
     }
-
-    printf("Final best solution was %f\n", bestFitness);
     return bestLoc;
 }
 
@@ -146,49 +144,19 @@ Vector computeAllocations(int allocationCount, AllocationPointer* allocations)
     {
         for(int allocID=0; allocID<allocationCount; allocID++)
         {
-            int allocSourceIndex = allocations[allocID].sourceIndex;
-            int allocBalanceIndex = allocations[allocID].balanceIndex;
-            assert(((allocSourceIndex == -1) && (allocBalanceIndex >= 0)) ||
-                    ((allocSourceIndex >= 0) && (allocBalanceIndex == -1)));
+            initializeAllocation(allocations[allocID], swarm[i].position, uniformf, rng);
 
-            float minStartDate = (float)minReqDate;
-            float maxStartDate = (float)maxReqDate;
-            float maxTenor = -1;
-            float maxAmount = -1;
-            if(allocSourceIndex >= 0)
-            {
-                SourceInfo& allocSource = g_input.sources[allocSourceIndex];
-                int sourceEndDate = allocSource.startDate + allocSource.tenor;
-                if(allocSource.startDate > minReqDate)
-                    minStartDate = (float)allocSource.startDate;
-                if(sourceEndDate < maxReqDate)
-                    maxStartDate = (float)sourceEndDate;
-                maxTenor = (float)allocSource.tenor;
-                maxAmount = (float)allocSource.amount;
-            }
-            else // NOTE: By the assert above, we necessarily have a balance pool here
-            {
-                BalancePoolInfo& allocBalance = g_input.balancePools[allocBalanceIndex];
-                maxTenor = 1; // TODO
-                maxAmount = (float)allocBalance.amount;
-            }
+            // Initialize allocation velocity
+            int requirementID = allocations[allocID].requirementIndex;
+            int allocReqStartDate = g_input.requirements[requirementID].startDate;
+            int allocReqTenor = g_input.requirements[requirementID].tenor;
+            int allocReqAmount = g_input.requirements[requirementID].amount;
 
-            float dateRange = maxStartDate - minStartDate;
-            float startDate = minStartDate + (uniformf(rng) * dateRange);
-            float startDateVelocity = centredUniformf(rng) * dateRange;
-            allocations[allocID].setStartDate(swarm[i].position, startDate);
+            float startDateVelocity = centredUniformf(rng) * 0.5f * (float)allocReqTenor;
+            float tenorVelocity = centredUniformf(rng) * 0.5f * (float)allocReqTenor;
+            float amountVelocity = centredUniformf(rng) * 0.5f * (float)allocReqAmount;
             allocations[allocID].setStartDate(swarm[i].velocity, startDateVelocity);
-
-            // NOTE: We use maxValidStarting tenor so that we never generate an infeasible tenor
-            float maxValidStartingTenor = maxStartDate - startDate;
-            float tenor = uniformf(rng) * maxValidStartingTenor;
-            float tenorVelocity = centredUniformf(rng) * maxTenor;
-            allocations[allocID].setTenor(swarm[i].position, tenor);
             allocations[allocID].setTenor(swarm[i].velocity, tenorVelocity);
-
-            float amount = uniformf(rng) * maxAmount;
-            float amountVelocity = centredUniformf(rng) * maxAmount;
-            allocations[allocID].setAmount(swarm[i].position, amount);
             allocations[allocID].setAmount(swarm[i].velocity, amountVelocity);
         }
 
