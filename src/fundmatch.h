@@ -79,6 +79,11 @@ struct AllocationPointer
     void setStartDate(Vector& data, float value);
     void setTenor(Vector& data, float value);
     void setAmount(Vector& data, float value);
+
+    float getMinStartDate() const;
+    float getMaxStartDate() const;
+    float getMaxTenor(const Vector& data) const;
+    float getMaxAmount(const Vector& data) const;
 };
 
 // TODO: Convert to vector<infotype> instead of arrays

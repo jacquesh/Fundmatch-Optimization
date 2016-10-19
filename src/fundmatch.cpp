@@ -98,6 +98,64 @@ void AllocationPointer::setAmount(Vector& data, float value)
     data[this->allocStartDimension + AMOUNT_OFFSET] = value;
 }
 
+float AllocationPointer::getMinStartDate() const
+{
+    RequirementInfo& req = g_input.requirements[this->requirementIndex];
+    float result = (float)req.startDate;
+    if(this->sourceIndex >= 0)
+    {
+        SourceInfo& source = g_input.sources[this->sourceIndex];
+        result = max(result, (float)source.startDate);
+    }
+    // NOTE: If this allocation comes from a balance pool then the start date is determined
+    //       entirely by that of the requirement
+    return result;
+}
+
+float AllocationPointer::getMaxStartDate() const
+{
+    RequirementInfo& req = g_input.requirements[this->requirementIndex];
+    float result = (float)(req.startDate + req.tenor - 1);
+    if(this->sourceIndex >= 0)
+    {
+        SourceInfo& source = g_input.sources[this->sourceIndex];
+        result = min(result, (float)(source.startDate + source.tenor - 1));
+    }
+    // NOTE: If this allocation comes from a balance pool then the start date is determined
+    //       entirely by that of the requirement
+    return result;
+}
+
+float AllocationPointer::getMaxTenor(const Vector& data) const
+{
+    RequirementInfo& req = g_input.requirements[this->requirementIndex];
+    float result = (float)req.tenor;
+    if(this->sourceIndex >= 0)
+    {
+        SourceInfo& source = g_input.sources[this->sourceIndex];
+        result = min(result, (float)source.tenor); // TODO: Should we take startDate into account?
+    }
+    // NOTE: If this allocation comes from a balance pool then the tenor is determined
+    //       entirely by that of the requirement
+    return result;
+}
+
+float AllocationPointer::getMaxAmount(const Vector& data) const
+{
+    RequirementInfo& req = g_input.requirements[this->requirementIndex];
+    float result = (float)req.amount;
+    if(this->sourceIndex >= 0)
+    {
+        SourceInfo& source = g_input.sources[this->sourceIndex];
+        result = min(result, (float)source.amount); // TODO: Use getMaxAllocationAmount?
+    }
+    else
+    {
+        // TODO: Balance Pools
+    }
+    return result;
+}
+
 void initializeAllocation(AllocationPointer& alloc, Vector& position,
         uniform_real_distribution<float>& uniformf, mt19937& rng)
 {
