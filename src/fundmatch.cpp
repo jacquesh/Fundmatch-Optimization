@@ -264,21 +264,40 @@ float maxAllocationAmount(Vector& position, int allocationCount, AllocationPoint
     return max(0.0f, result);
 }
 
+bool isFeasible(Vector& position, int allocationCount, AllocationPointer* allocations)
+{
+    for(int allocID=0; allocID<allocationCount; allocID++)
+    {
         float allocStart = allocations[allocID].getStartDate(position);
         float allocEnd = allocations[allocID].getEndDate(position);
         float allocTenor = allocations[allocID].getTenor(position);
         float allocAmount = allocations[allocID].getAmount(position);
 
-        float sourceStart = (float)source.startDate;
-        float sourceEnd = (float)(source.startDate + source.tenor);
-        float sourceAmount = (float)source.amount;
+        if((allocTenor < 0.0f) || (allocAmount < 0.0f))
+            return false;
 
-        if((allocStart < sourceStart) || (allocStart > sourceEnd))
-            return false;
-        if((allocTenor < 0.0f) || (allocEnd > sourceEnd))
-            return false;
-        if((allocAmount < 0.0f) || (allocAmount > sourceAmount))
-            return false;
+        if(allocations[allocID].sourceIndex >= 0)
+        {
+            SourceInfo& source = g_input.sources[allocations[allocID].sourceIndex];
+            float sourceStart = (float)source.startDate;
+            float sourceEnd = (float)(source.startDate + source.tenor);
+            float sourceAmount = (float)source.amount;
+            if((allocStart < sourceStart) || (allocStart > sourceEnd))
+                return false;
+            if(allocEnd > sourceEnd)
+                return false;
+            if(allocAmount > sourceAmount)
+                return false;
+        }
+        else
+        {
+            assert(allocations[allocID].balanceIndex >= 0);
+            BalancePoolInfo& balancePool = g_input.balancePools[allocations[allocID].balanceIndex];
+            // TODO: Other properties, if we have any
+            float balanceAmount = (float)balancePool.amount;
+            if(allocAmount > balanceAmount)
+                return false;
+        }
     }
 
     // Check that no sources ever get over-used (IE 2 allocations with value 300 from a source of 500 at the same time)
@@ -303,6 +322,7 @@ float maxAllocationAmount(Vector& position, int allocationCount, AllocationPoint
     {
         sourceValueRemaining[i] = (float)g_input.sources[i].amount;
     }
+    // TODO: Balance Pools
 
     int allocStartIndex = 0;
     int allocEndIndex = 0;

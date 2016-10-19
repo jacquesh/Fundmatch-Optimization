@@ -123,7 +123,7 @@ float maxAllocationAmount(Vector& position, int allocationCount, AllocationPoint
 Vector computeAllocations(int allocationCount, AllocationPointer* allocations);
 
 // Returns true iff the given position vector and allocation set is feasible
-bool isFeasible(Vector position, int allocationCount, AllocationPointer* allocations);
+bool isFeasible(Vector& position, int allocationCount, AllocationPointer* allocations);
 
 // Returns the fitness (total interest cost) of the given position vector and allocation set
 float computeFitness(Vector& position, int allocationCount, AllocationPointer* allocations);
