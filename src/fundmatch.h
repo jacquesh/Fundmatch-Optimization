@@ -126,7 +126,7 @@ Vector computeAllocations(int allocationCount, AllocationPointer* allocations);
 bool isFeasible(Vector position, int allocationCount, AllocationPointer* allocations);
 
 // Returns the fitness (total interest cost) of the given position vector and allocation set
-float computeFitness(Vector position, int allocationCount, AllocationPointer* allocations);
+float computeFitness(Vector& position, int allocationCount, AllocationPointer* allocations);
 
 // Serialize the sources, requirements and allocations into a JSON string and writes it to file
 void writeOutputData(InputData input, int allocCount, AllocationPointer* allocations,

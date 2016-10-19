@@ -359,7 +359,7 @@ float maxAllocationAmount(Vector& position, int allocationCount, AllocationPoint
     return true;
 }
 
-float computeFitness(Vector position, int allocationCount, AllocationPointer* allocations)
+float computeFitness(Vector& position, int allocationCount, AllocationPointer* allocations)
 {
     vector<AllocationPointer*> allocationsByStart;
     for(int i=0; i<allocationCount; i++)
