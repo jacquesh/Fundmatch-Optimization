@@ -6,6 +6,8 @@
 #include "fundmatch.h"
 #include "platform.h"
 
+using namespace std;
+
 bool isAllocationPairValid(SourceInfo& source, RequirementInfo& req)
 {
     if(source.taxClass != req.taxClass)
@@ -16,10 +18,14 @@ bool isAllocationPairValid(SourceInfo& source, RequirementInfo& req)
     int sourceEnd = source.startDate + source.tenor;
     int requireEnd = req.startDate + req.tenor;
 
-    if((sourceEnd < requireStart) || (sourceStart > requireEnd))
-        return false;
+    int validStart = max(sourceStart, requireStart);
+    int validEnd = min(sourceEnd, requireEnd);
 
-    return true;
+    // NOTE: We need there to be an overlap of at least 1 month (0-length loans are irrelevant)
+    if(validEnd >= validStart+1)
+        return true;
+
+    return false;
 }
 
 int min(int a, int b)
