@@ -6,6 +6,7 @@
 #include <fstream>
 #include <vector>
 #include <random>
+#include <algorithm>
 
 #include "jzon.h"
 
@@ -157,59 +158,35 @@ float AllocationPointer::getMaxAmount(const Vector& data) const
 }
 
 void initializeAllocation(AllocationPointer& alloc, Vector& position,
-        uniform_real_distribution<float>& uniformf, mt19937& rng)
+         mt19937& rng)
 {
+    uniform_real_distribution<float> uniformf(0.0f, 1.0f);
+
     int allocSourceIndex = alloc.sourceIndex;
     int allocBalanceIndex = alloc.balanceIndex;
     assert(((allocSourceIndex == -1) && (allocBalanceIndex >= 0)) ||
             ((allocSourceIndex >= 0) && (allocBalanceIndex == -1)));
 
-    RequirementInfo& firstReq = g_input.requirements[g_input.requirementsByStart[0]];
-    RequirementInfo& lastReq = g_input.requirements[g_input.requirementsByEnd[g_input.requirements.size()-1]];
-    int minReqDate = firstReq.startDate;
-    int maxReqDate = lastReq.startDate + lastReq.tenor;
-    assert(maxReqDate > minReqDate);
-
-    float minStartDate = (float)minReqDate;
-    float maxStartDate = (float)maxReqDate;
-    float maxTenor = -1;
-    float maxAmount = -1;
-    if(allocSourceIndex >= 0)
-    {
-        SourceInfo& allocSource = g_input.sources[allocSourceIndex];
-        int sourceEndDate = allocSource.startDate + allocSource.tenor;
-        if(allocSource.startDate > minReqDate)
-            minStartDate = (float)allocSource.startDate;
-        if(sourceEndDate < maxReqDate)
-            maxStartDate = (float)sourceEndDate;
-        maxTenor = (float)allocSource.tenor;
-        maxAmount = (float)allocSource.amount;
-    }
-    else // NOTE: By the assert above, we necessarily have a balance pool here
-    {
-        BalancePoolInfo& allocBalance = g_input.balancePools[allocBalanceIndex];
-        maxTenor = 1; // TODO
-        maxAmount = (float)allocBalance.amount;
-    }
+    float minStartDate = alloc.getMinStartDate();
+    float maxStartDate = alloc.getMaxStartDate();
+    float maxTenor = alloc.getMaxTenor(position);
+    float maxAmount = alloc.getMaxAmount(position);
 
     float dateRange = maxStartDate - minStartDate;
+    assert(dateRange >= 0.0f);
+
     float startDate = minStartDate + (uniformf(rng) * dateRange);
+    assert(startDate > 1.0f);
     alloc.setStartDate(position, startDate);
 
-    // NOTE: We use maxValidStarting tenor so that we never generate an infeasible tenor.
-    //       This is valid for velocities in PSO as well, because if the startDate is close to
-    //       the max tenor, then we don't want a large velocity anyways.
-    //       We technically would want a velocity that can be large and negative in this case,
-    //       but it shouldn't make too much of a difference since other particles will attract it.
     float maxValidStartingTenor = maxStartDate - startDate;
     float tenor = uniformf(rng) * maxValidStartingTenor;
     alloc.setTenor(position, tenor);
 
-    float amount = uniformf(rng) * maxAmount;
+    float amount = 0.5f * uniformf(rng) * maxAmount;
     alloc.setAmount(position, amount);
 }
 
-bool isFeasible(Vector position, int allocationCount, AllocationPointer* allocations)
 {
     for(int allocID=0; allocID<allocationCount; allocID++)
     {
