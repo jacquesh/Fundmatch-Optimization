@@ -114,8 +114,10 @@ bool loadRequirementData(const char* inputFilename, InputData& input);
 //bool loadAllocationData(const char* inputFilename, AllocationInfo** allocations, int& allocationCount);
 
 // Gives valid initial values to the given position vector, using the given random generators
-void initializeAllocation(AllocationPointer& alloc, Vector& position,
-        std::uniform_real_distribution<float>& uniformf, std::mt19937& rng);
+void initializeAllocation(AllocationPointer& alloc, Vector& position, std::mt19937& rng);
+
+// Returns the maximum feasible amount that be loaned as part of the given allocation
+float maxAllocationAmount(Vector& position, int allocationCount, AllocationPointer* allocations, int allocID);
 
 // Returns a Vector containing the final best solution for the parameters to be optimized
 Vector computeAllocations(int allocationCount, AllocationPointer* allocations);

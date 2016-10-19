@@ -187,12 +187,83 @@ void initializeAllocation(AllocationPointer& alloc, Vector& position,
     alloc.setAmount(position, amount);
 }
 
+float maxAllocationAmount(Vector& position, int allocationCount, AllocationPointer* allocations, int allocID)
 {
-    for(int allocID=0; allocID<allocationCount; allocID++)
+    float result;
+    float sourceValueRemaining;
+
+    if(allocations[allocID].sourceIndex >= 0)
     {
-        // TODO: Balance pools
         SourceInfo& source = g_input.sources[allocations[allocID].sourceIndex];
-        RequirementInfo& req = g_input.requirements[allocations[allocID].requirementIndex];
+        result = (float)source.amount;
+        sourceValueRemaining = (float)source.amount;
+    }
+    else
+    {
+        assert(allocations[allocID].balanceIndex >= 0);
+        BalancePoolInfo& balancePool = g_input.balancePools[allocations[allocID].balanceIndex];
+        result = (float)balancePool.amount;
+        sourceValueRemaining = (float)balancePool.amount;
+    }
+
+    // Check that no sources ever get over-used (IE 2 allocations with value 300 from a source of 500 at the same time)
+    vector<AllocationPointer*> allocationsByStart;
+    for(int i=0; i<allocationCount; i++)
+    {
+        // NOTE: We don't want to consider the amount used by the allocation that we' trying to
+        //       find the maximal feasible value for
+        if(i != allocID)
+            allocationsByStart.push_back(&allocations[i]);
+    }
+    vector<AllocationPointer*> allocationsByEnd(allocationsByStart);
+
+    auto allocStartDateComparison = [&position](AllocationPointer* a, AllocationPointer* b)
+    {
+        return a->getStartDate(position) < b->getStartDate(position);
+    };
+    auto allocEndDateComparison = [&position](AllocationPointer* a, AllocationPointer* b)
+    {
+        return a->getEndDate(position) < b->getEndDate(position);
+    };
+    sort(allocationsByStart.begin(), allocationsByStart.end(), allocStartDateComparison);
+    sort(allocationsByEnd.begin(), allocationsByEnd.end(), allocEndDateComparison);
+
+    int allocStartIndex = 0;
+    int allocEndIndex = 0;
+    while((allocStartIndex < allocationCount) || (allocEndIndex < allocationCount))
+    {
+        float nextAllocStartTime = FLT_MAX;
+        float nextAllocEndTime = FLT_MAX;
+        if(allocStartIndex < allocationCount)
+            nextAllocStartTime = allocationsByStart[allocStartIndex]->getStartDate(position);
+        if(allocEndIndex < allocationCount)
+            nextAllocEndTime = allocationsByEnd[allocEndIndex]->getEndDate(position);
+
+        // Handle the allocation event
+        // NOTE: It is significant that this is a strict inequality, because for very small
+        //       tenor, we still want to handle the allocation start first
+        if(nextAllocEndTime < nextAllocStartTime)
+        {
+            AllocationPointer* alloc = allocationsByEnd[allocEndIndex];
+            sourceValueRemaining += alloc->getAmount(position);
+            allocEndIndex++;
+        }
+        else
+        {
+            // Handle the allocation-start event
+            AllocationPointer* alloc = allocationsByStart[allocStartIndex];
+            sourceValueRemaining -= alloc->getAmount(position);
+            allocStartIndex++;
+
+            result = min(result, sourceValueRemaining);
+        }
+    }
+
+    // NOTE: We can get a negative value if the solution is infeasible, but in that case we still
+    //       only want to return 0 because that's how much money we can still allocate
+    return max(0.0f, result);
+}
+
         float allocStart = allocations[allocID].getStartDate(position);
         float allocEnd = allocations[allocID].getEndDate(position);
         float allocTenor = allocations[allocID].getTenor(position);
