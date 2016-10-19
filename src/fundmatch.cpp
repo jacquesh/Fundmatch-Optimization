@@ -68,19 +68,19 @@ Vector& Vector::operator =(const Vector& other)
     return *this;
 }
 
-float AllocationPointer::getStartDate(Vector& data)
+float AllocationPointer::getStartDate(const Vector& data) const
 {
     return data[this->allocStartDimension + START_DATE_OFFSET];
 }
-float AllocationPointer::getTenor(Vector& data)
+float AllocationPointer::getTenor(const Vector& data) const
 {
     return data[this->allocStartDimension + TENOR_OFFSET];
 }
-float AllocationPointer::getAmount(Vector& data)
+float AllocationPointer::getAmount(const Vector& data) const
 {
     return data[this->allocStartDimension + AMOUNT_OFFSET];
 }
-float AllocationPointer::getEndDate(Vector& data)
+float AllocationPointer::getEndDate(const Vector& data) const
 {
     return getStartDate(data) + getTenor(data);
 }

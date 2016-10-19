@@ -51,7 +51,7 @@ struct Vector
     int dimensions;
     float* coords;
 
-    float& operator [](int index)
+    float& operator [](int index) const
     {
         return coords[index];
     }
@@ -71,10 +71,10 @@ struct AllocationPointer
     int balanceIndex;
     int allocStartDimension; // The index of the dimension where this allocation's data starts
 
-    float getStartDate(Vector& data);
-    float getTenor(Vector& data);
-    float getAmount(Vector& data);
-    float getEndDate(Vector& data);
+    float getStartDate(const Vector& data) const;
+    float getTenor(const Vector& data) const;
+    float getAmount(const Vector& data) const;
+    float getEndDate(const Vector& data) const;
 
     void setStartDate(Vector& data, float value);
     void setTenor(Vector& data, float value);
