@@ -36,7 +36,8 @@ Vector optimizeSwarm(Particle* swarm, int dimensionCount,
     float bestFitness = FLT_MAX;
     for(int particleIndex=0; particleIndex<SWARM_SIZE; particleIndex++)
     {
-        assert(isFeasible(swarm[particleIndex].position, allocCount, allocations));
+        if(!isFeasible(swarm[particleIndex].position, allocCount, allocations))
+            continue;
 
         float fitness = computeFitness(swarm[particleIndex].position, allocCount, allocations);
         if(fitness < bestFitness)
@@ -137,14 +138,29 @@ Vector computeAllocations(int allocationCount, AllocationPointer* allocations)
     // Initialize the swarm
     random_device randDevice;
     mt19937 rng(randDevice());
-    uniform_real_distribution<float> uniformf(0.0f, 1.0f);
     uniform_real_distribution<float> centredUniformf(-1.0f, 1.0f);
     uniform_int_distribution<int> uniformi(0, NEIGHBOUR_COUNT);
     for(int i=0; i<SWARM_SIZE; i++)
     {
         for(int allocID=0; allocID<allocationCount; allocID++)
         {
-            initializeAllocation(allocations[allocID], swarm[i].position, uniformf, rng);
+            int retries = 0;
+            do
+            {
+                initializeAllocation(allocations[allocID], swarm[i].position, rng);
+                allocations[allocID].setAmount(swarm[i].position, 0); // TODO: This prevents us from getting 0 valid particles, would like to find a better solution though
+                // NOTE: The reason we're getting no valid particles is that checking individual
+                //       allocations independently is fine, but when you consider them all at once
+                //       it isn't valid because you over-allocate from some source.
+                //
+                //       It might be a good idea to change the isFeasible version with non-default
+                //       checkAlloc to check all allocations up-to-and-including checkAlloc instead
+                //       of just checkAlloc.
+            } while((retries++ < 5) &&
+                    !isFeasible(swarm[i].position, allocationCount, allocations));
+
+            if(retries > 1)
+                printf("Alloc %d-%d took %d retries to initialize\n", i, allocID, retries);
 
             // Initialize allocation velocity
             int requirementID = allocations[allocID].requirementIndex;
@@ -160,8 +176,6 @@ Vector computeAllocations(int allocationCount, AllocationPointer* allocations)
             allocations[allocID].setAmount(swarm[i].velocity, amountVelocity);
         }
 
-        // NOTE: We just make sure to only generate random positions within the feasible region
-        assert(isFeasible(swarm[i].position, allocationCount, allocations));
         swarm[i].bestSeenLoc = swarm[i].position;
         swarm[i].bestSeenFitness = computeFitness(swarm[i].position, allocationCount, allocations);
 
@@ -171,6 +185,7 @@ Vector computeAllocations(int allocationCount, AllocationPointer* allocations)
             swarm[i].neighbours[neighbourIndex] = &swarm[uniformi(rng)];
         }
     }
+    printf("Initialization complete\n");
 
     // Run PSO using our new swarm
     Vector bestSolution = optimizeSwarm(swarm, dimensionCount, allocationCount, allocations);
