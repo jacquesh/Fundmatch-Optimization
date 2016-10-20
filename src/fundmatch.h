@@ -68,7 +68,7 @@ struct AllocationPointer
 {
     int sourceIndex;
     int requirementIndex;
-    int balanceIndex;
+    int balancePoolIndex;
     int allocStartDimension; // The index of the dimension where this allocation's data starts
 
     float getStartDate(const Vector& data) const;

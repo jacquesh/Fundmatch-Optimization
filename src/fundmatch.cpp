@@ -163,7 +163,7 @@ void initializeAllocation(AllocationPointer& alloc, Vector& position,
     uniform_real_distribution<float> uniformf(0.0f, 1.0f);
 
     int allocSourceIndex = alloc.sourceIndex;
-    int allocBalanceIndex = alloc.balanceIndex;
+    int allocBalanceIndex = alloc.balancePoolIndex;
     assert(((allocSourceIndex == -1) && (allocBalanceIndex >= 0)) ||
             ((allocSourceIndex >= 0) && (allocBalanceIndex == -1)));
 
@@ -200,8 +200,8 @@ float maxAllocationAmount(Vector& position, int allocationCount, AllocationPoint
     }
     else
     {
-        assert(allocations[allocID].balanceIndex >= 0);
-        BalancePoolInfo& balancePool = g_input.balancePools[allocations[allocID].balanceIndex];
+        assert(allocations[allocID].balancePoolIndex >= 0);
+        BalancePoolInfo& balancePool = g_input.balancePools[allocations[allocID].balancePoolIndex];
         result = (float)balancePool.amount;
         sourceValueRemaining = (float)balancePool.amount;
     }
@@ -268,17 +268,18 @@ bool isFeasible(Vector& position, int allocationCount, AllocationPointer* alloca
 {
     for(int allocID=0; allocID<allocationCount; allocID++)
     {
-        float allocStart = allocations[allocID].getStartDate(position);
-        float allocEnd = allocations[allocID].getEndDate(position);
-        float allocTenor = allocations[allocID].getTenor(position);
-        float allocAmount = allocations[allocID].getAmount(position);
+        AllocationPointer& alloc = allocations[allocID];
+        float allocStart = alloc.getStartDate(position);
+        float allocEnd = alloc.getEndDate(position);
+        float allocTenor = alloc.getTenor(position);
+        float allocAmount = alloc.getAmount(position);
 
         if((allocTenor < 0.0f) || (allocAmount < 0.0f))
             return false;
 
-        if(allocations[allocID].sourceIndex >= 0)
+        if(alloc.sourceIndex >= 0)
         {
-            SourceInfo& source = g_input.sources[allocations[allocID].sourceIndex];
+            SourceInfo& source = g_input.sources[alloc.sourceIndex];
             float sourceStart = (float)source.startDate;
             float sourceEnd = (float)(source.startDate + source.tenor);
             float sourceAmount = (float)source.amount;
@@ -291,8 +292,8 @@ bool isFeasible(Vector& position, int allocationCount, AllocationPointer* alloca
         }
         else
         {
-            assert(allocations[allocID].balanceIndex >= 0);
-            BalancePoolInfo& balancePool = g_input.balancePools[allocations[allocID].balanceIndex];
+            assert(alloc.balancePoolIndex >= 0);
+            BalancePoolInfo& balancePool = g_input.balancePools[alloc.balancePoolIndex];
             // TODO: Other properties, if we have any
             float balanceAmount = (float)balancePool.amount;
             if(allocAmount > balanceAmount)
@@ -739,7 +740,7 @@ void writeOutputData(InputData input, int allocCount, AllocationPointer* allocat
 
         Jzon::Node allocNode = Jzon::object();
         allocNode.add("sourceIndex", allocations[allocID].sourceIndex);
-        allocNode.add("balancePoolIndex", allocations[allocID].balanceIndex);
+        allocNode.add("balancePoolIndex", allocations[allocID].balancePoolIndex);
         allocNode.add("requirementIndex", allocations[allocID].requirementIndex);
         allocNode.add("startDate", dateStr);
         allocNode.add("tenor", tenor);

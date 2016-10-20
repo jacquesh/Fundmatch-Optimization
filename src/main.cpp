@@ -85,7 +85,7 @@ int main()
         {
             allocations[currentAllocIndex].sourceIndex = -1;
             allocations[currentAllocIndex].requirementIndex = reqID;
-            allocations[currentAllocIndex].balanceIndex = balanceID;
+            allocations[currentAllocIndex].balancePoolIndex = balanceID;
             currentAllocIndex++;
         }
     }
@@ -97,7 +97,7 @@ int main()
             {
                 allocations[currentAllocIndex].sourceIndex = sourceID;
                 allocations[currentAllocIndex].requirementIndex = reqID;
-                allocations[currentAllocIndex].balanceIndex = -1;
+                allocations[currentAllocIndex].balancePoolIndex = -1;
                 currentAllocIndex++;
             }
         }
