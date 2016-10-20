@@ -1,0 +1,2 @@
+Optimal allocation costs 2565
+Worst allocation (all RCF) costs 2925
