@@ -754,6 +754,9 @@ void writeOutputData(InputData input, int allocCount, AllocationPointer* allocat
         int tenor = (int)(allocations[allocID].getTenor(solution) + 0.5f);
         int amount = (int)(allocations[allocID].getAmount(solution) + 0.5f);
 
+        if((tenor <= 0) || (amount <= 0))
+            continue;
+
         int month = startDate % 12;
         int year = startDate / 12;
         snprintf(dateStr, MAX_DATE_STR_LEN, "01-%02d-%04d", month, year);
