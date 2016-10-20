@@ -173,7 +173,7 @@ Vector computeAllocations(int allocationCount, AllocationPointer* allocations)
 
             float startDateVelocity = centredUniformf(rng) * 0.5f * (float)allocReqTenor;
             float tenorVelocity = centredUniformf(rng) * 0.5f * (float)allocReqTenor;
-            float amountVelocity = centredUniformf(rng) * 0.5f * (float)allocReqAmount;
+            float amountVelocity = centredUniformf(rng) * (float)allocReqAmount;
             allocations[allocID].setStartDate(swarm[i].velocity, startDateVelocity);
             allocations[allocID].setTenor(swarm[i].velocity, tenorVelocity);
             allocations[allocID].setAmount(swarm[i].velocity, amountVelocity);
