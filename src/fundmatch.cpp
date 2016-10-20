@@ -152,7 +152,8 @@ float AllocationPointer::getMaxAmount(const Vector& data) const
     }
     else
     {
-        // TODO: Balance Pools
+        BalancePoolInfo& pool = g_input.balancePools[this->balancePoolIndex];
+        result = min(result, pool.amount); // TODO: Use a balancePool-equivalent of getMaxAllocationAmount?
     }
     return result;
 }
@@ -323,7 +324,11 @@ bool isFeasible(Vector& position, int allocationCount, AllocationPointer* alloca
     {
         sourceValueRemaining[i] = (float)g_input.sources[i].amount;
     }
-    // TODO: Balance Pools
+    float* balancePoolValueRemaining = new float[g_input.balancePools.size()];
+    for(int i=0; i<g_input.balancePools.size(); i++)
+    {
+        balancePoolValueRemaining[i] = g_input.balancePools[i].amount;
+    }
 
     int allocStartIndex = 0;
     int allocEndIndex = 0;
@@ -340,7 +345,6 @@ bool isFeasible(Vector& position, int allocationCount, AllocationPointer* alloca
         // Handle the allocation event
         // NOTE: It is significant that this is a strict inequality, because for very small
         //       tenor, we still want to handle the allocation start first
-        // TODO: Balance pools
         if(nextAllocEndTime < nextAllocStartTime)
         {
             if(allocationsByEnd[allocEndIndex]->sourceIndex >= 0)
@@ -357,7 +361,16 @@ bool isFeasible(Vector& position, int allocationCount, AllocationPointer* alloca
                     }
                 }
                 assert(alloc != nullptr);
-                sourceValueRemaining[alloc->sourceIndex] += alloc->getAmount(position);
+                float allocAmount = alloc->getAmount(position);
+                if(alloc->sourceIndex >= 0)
+                {
+                    sourceValueRemaining[alloc->sourceIndex] += allocAmount;
+                }
+                else
+                {
+                    assert(alloc->balancePoolIndex >= 0);
+                    balancePoolValueRemaining[alloc->balancePoolIndex] += allocAmount;
+                }
             }
             allocEndIndex++;
         }
@@ -365,16 +378,25 @@ bool isFeasible(Vector& position, int allocationCount, AllocationPointer* alloca
         {
             // Handle the allocation-start event
             AllocationPointer* alloc = allocationsByStart[allocStartIndex];
-            allocStartIndex++;
+            activeAllocations.push_back(alloc);
+            float allocAmount = alloc->getAmount(position);
             if(alloc->sourceIndex >= 0)
             {
-                activeAllocations.push_back(alloc);
-                sourceValueRemaining[alloc->sourceIndex] -= alloc->getAmount(position);
+                sourceValueRemaining[alloc->sourceIndex] -= allocAmount;
                 if(sourceValueRemaining[alloc->sourceIndex] < 0.0f)
                     return false;
             }
+            else
+            {
+                assert(alloc->balancePoolIndex >= 0);
+                balancePoolValueRemaining[alloc->balancePoolIndex] -= allocAmount;
+                if(balancePoolValueRemaining[alloc->balancePoolIndex] < 0.0f)
+                    return false;
+            }
+            allocStartIndex++;
         }
     }
+    delete[] balancePoolValueRemaining;
     delete[] sourceValueRemaining;
 
     return true;
@@ -483,8 +505,6 @@ float computeFitness(Vector& position, int allocationCount, AllocationPointer* a
             // Handle the allocation event
             // NOTE: It is significant that this is a strict inequality, because for very small
             //       tenor, we still want to handle the allocation start first
-            // TODO: This will break if we every get a negative tenor, we currently don't
-            //       check that solutions are feasible before computing cost, that needs to be done
             if(nextAllocEndTime < nextAllocStartTime)
             {
                 // Handle the allocation-end event
