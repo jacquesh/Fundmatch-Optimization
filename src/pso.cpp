@@ -142,13 +142,13 @@ Vector computeAllocations(int allocationCount, AllocationPointer* allocations)
     uniform_int_distribution<int> uniformi(0, NEIGHBOUR_COUNT);
     for(int i=0; i<SWARM_SIZE; i++)
     {
-        for(int allocID=0; allocID<allocationCount; allocID++)
+        int retries = 0;
+        do
         {
-            int retries = 0;
-            do
+            for(int allocID=0; allocID<allocationCount; allocID++)
             {
                 initializeAllocation(allocations[allocID], swarm[i].position, rng);
-                allocations[allocID].setAmount(swarm[i].position, 0); // TODO: This prevents us from getting 0 valid particles, would like to find a better solution though
+                //allocations[allocID].setAmount(swarm[i].position, 0); // TODO: This prevents us from getting 0 valid particles, would like to find a better solution though
                 // NOTE: The reason we're getting no valid particles is that checking individual
                 //       allocations independently is fine, but when you consider them all at once
                 //       it isn't valid because you over-allocate from some source.
@@ -156,13 +156,16 @@ Vector computeAllocations(int allocationCount, AllocationPointer* allocations)
                 //       It might be a good idea to change the isFeasible version with non-default
                 //       checkAlloc to check all allocations up-to-and-including checkAlloc instead
                 //       of just checkAlloc.
-            } while((retries++ < 5) &&
-                    !isFeasible(swarm[i].position, allocationCount, allocations));
+            }
+        } while((retries++ < 5) &&
+                !isFeasible(swarm[i].position, allocationCount, allocations));
 
-            if(retries > 1)
-                printf("Alloc %d-%d took %d retries to initialize\n", i, allocID, retries);
+        if(retries > 1)
+            printf("Particle %d took %d retries to initialize\n", i, retries);
 
-            // Initialize allocation velocity
+        // Initialize allocation velocity
+        for(int allocID=0; allocID<allocationCount; allocID++)
+        {
             int requirementID = allocations[allocID].requirementIndex;
             int allocReqStartDate = g_input.requirements[requirementID].startDate;
             int allocReqTenor = g_input.requirements[requirementID].tenor;
