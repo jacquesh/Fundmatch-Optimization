@@ -69,6 +69,11 @@ Vector& Vector::operator =(const Vector& other)
     return *this;
 }
 
+float& Vector::operator [](int index) const
+{
+    return coords[index];
+}
+
 float AllocationPointer::getStartDate(const Vector& data) const
 {
     return data[this->allocStartDimension + START_DATE_OFFSET];

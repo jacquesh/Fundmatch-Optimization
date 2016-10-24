@@ -51,17 +51,13 @@ struct Vector
     int dimensions;
     float* coords;
 
-    float& operator [](int index) const
-    {
-        return coords[index];
-    }
-
     Vector();
     Vector(int dimCount);
     Vector(const Vector& other);
     ~Vector();
 
     Vector& operator =(const Vector& other);
+    float& operator [](int index) const;
 };
 
 struct AllocationPointer
