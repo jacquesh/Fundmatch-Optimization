@@ -16,119 +16,161 @@ using namespace std;
 
 static FileLogger plotLog = FileLogger("ga_fitness.dat");
 
-void mutateIndividualAllocation(AllocationPointer& alloc, Vector& individual)
+void mutateIndividual(Vector& individual, int allocCount, AllocationPointer* allocations)
 {
     static random_device randDevice;
     static mt19937 rng(randDevice());
     uniform_real_distribution<float> uniformf(0.0f, 1.0f);
 
-    float mutationType = uniformf(rng);
-    if(mutationType < 0.333f)
+    for(int allocID=0; allocID<allocCount; allocID++)
     {
-        // Start Date
-        float minStartDate = alloc.getMinStartDate();
-        float maxStartDate = alloc.getMaxStartDate();
-        float dateRange = maxStartDate - minStartDate;
-        float newStartDate = minStartDate + uniformf(rng)*dateRange;
-        alloc.setStartDate(individual, newStartDate);
-    }
-    else if(mutationType < 0.666f)
-    {
-        // Tenor
-        float maxTenor = alloc.getMaxTenor(individual);
-        float newTenor = uniformf(rng)*maxTenor;
-        alloc.setTenor(individual, newTenor);
-    }
-    else
-    {
-        // Amount
-        float maxAmount = alloc.getMaxAmount(individual);
-        float newAmount = uniformf(rng)*maxAmount;
-        alloc.setAmount(individual, newAmount);
+        float shouldMutate = uniformf(rng);
+        if(!(shouldMutate < MUTATION_RATE))
+            continue;
+
+        AllocationPointer& alloc = allocations[allocID];
+        float mutationType = uniformf(rng);
+        if(mutationType < 0.333f)
+        {
+            // Start Date
+            float minStartDate = alloc.getMinStartDate();
+            float maxStartDate = alloc.getMaxStartDate();
+            float dateRange = maxStartDate - minStartDate;
+            float newStartDate = minStartDate + uniformf(rng)*dateRange;
+            alloc.setStartDate(individual, newStartDate);
+        }
+        else if(mutationType < 0.666f)
+        {
+            // Tenor
+            float maxTenor = alloc.getMaxTenor(individual);
+            float newTenor = uniformf(rng)*maxTenor;
+            alloc.setTenor(individual, newTenor);
+        }
+        else
+        {
+            // Amount
+            float maxAmount = alloc.getMaxAmount(individual);
+            float newAmount = uniformf(rng)*maxAmount;
+            alloc.setAmount(individual, newAmount);
+        }
     }
 }
 
-void crossoverAllocations(AllocationPointer& allocA, AllocationPointer& allocB, Vector* population)
+void crossoverIndividuals(Vector& individualA, Vector& individualB,
+                          int allocationCount, AllocationPointer* allocations)
 {
     static random_device randDevice;
     static mt19937 rng(randDevice());
-    uniform_int_distribution<int> randomIndividual(0, POPULATION_SIZE);
+    uniform_int_distribution<int> randomIndividual(0, allocationCount-1); // Endpoints are inclusive
     // 1-point crossover
-    int indivID = randomIndividual(rng);
+    AllocationPointer& alloc = allocations[randomIndividual(rng)];
 
-    float tempStartDate = allocA.getStartDate(population[indivID]);
-    float tempTenor = allocA.getTenor(population[indivID]);
-    float tempAmount = allocA.getAmount(population[indivID]);
+    float tempStartDate = alloc.getStartDate(individualA);
+    float tempTenor = alloc.getTenor(individualA);
+    float tempAmount = alloc.getAmount(individualA);
 
-    allocA.setStartDate(population[indivID], allocB.getStartDate(population[indivID]));
-    allocA.setTenor(population[indivID], allocB.getTenor(population[indivID]));
-    allocA.setAmount(population[indivID], allocB.getAmount(population[indivID]));
+    alloc.setStartDate(individualA, alloc.getStartDate(individualB));
+    alloc.setTenor(individualA, alloc.getTenor(individualB));
+    alloc.setAmount(individualA, alloc.getAmount(individualB));
 
-    allocB.setStartDate(population[indivID], tempStartDate);
-    allocB.setTenor(population[indivID], tempTenor);
-    allocB.setAmount(population[indivID], tempAmount);
+    alloc.setStartDate(individualB, tempStartDate);
+    alloc.setTenor(individualB, tempTenor);
+    alloc.setAmount(individualB, tempAmount);
 }
 
-Vector evolvePopulation(Vector* population, int dimensionCount,
+Vector evolvePopulation(Individual* population, int dimensionCount,
                         int allocCount, AllocationPointer* allocations)
 {
-    Vector bestIndividual = population[0];
-    float bestFitness = FLT_MAX;
+    Individual bestIndividual = population[0];
+    for(int indivID=1; indivID<POPULATION_SIZE; indivID++)
+    {
+        if(population[indivID].fitness < bestIndividual.fitness)
+            bestIndividual = population[indivID];
+    }
+    plotLog.log("%d %.2f\n", -1, bestIndividual.fitness);
 
     random_device randDevice;
     mt19937 rng(randDevice());
     uniform_real_distribution<float> uniformf(0.0f, 1.0f);
+    uniform_int_distribution<int> uniformIndiv(0, POPULATION_SIZE-1); // Inclusive
+
+    assert(PARENT_COUNT % 2 == 0); // So we can do nice crossover
+    vector<Individual> parentList(PARENT_COUNT);
 
     for(int iteration=0; iteration<MAX_ITERATIONS; iteration++)
     {
+        // Parent Selection
+        for(int parentID=0; parentID<PARENT_COUNT; parentID++)
+        {
+            Individual* tourneyWinner = &population[uniformIndiv(rng)];
+            for(int i=0; i<TOURNAMENT_SIZE-1; i++)
+            {
+                Individual* contestant = &population[uniformIndiv(rng)];
+                if(contestant->fitness < tourneyWinner->fitness)
+                    tourneyWinner = contestant;
+            }
+
+            parentList[parentID] = *tourneyWinner;
+        }
+
+        // Crossover
+        for(int parentID=0; parentID<PARENT_COUNT; parentID+=2)
+        {
+            crossoverIndividuals(parentList[parentID].position, parentList[parentID+1].position, allocCount, allocations);
+        }
+
+        // Mutation
+        for(int parentID=0; parentID<PARENT_COUNT; parentID++)
+        {
+            mutateIndividual(parentList[parentID].position, allocCount, allocations);
+        }
+
+        // Child selection
+        for(int parentID=0; parentID<PARENT_COUNT; parentID++)
+        {
+            int replacedIndiv = uniformIndiv(rng);
+            population[replacedIndiv] = parentList[parentID];
+        }
+
+        // Evaluation
         for(int indivID=0; indivID<POPULATION_SIZE; indivID++)
         {
-            if(isFeasible(population[indivID], allocCount, allocations))
+            if(isFeasible(population[indivID].position, allocCount, allocations))
             {
-                float fitness = computeFitness(population[indivID], allocCount, allocations);
-                if(fitness < bestFitness)
+                float fitness = computeFitness(population[indivID].position, allocCount, allocations);
+                population[indivID].fitness = fitness;
+                if(fitness < bestIndividual.fitness)
                 {
-                    bestFitness = fitness;
                     bestIndividual = population[indivID];
                 }
             }
-
-            // Crossover
-            vector<int> allocIDs(allocCount);
-            for(int i=0; i<allocCount; i++)
-                allocIDs[i] = i;
-            random_shuffle(allocIDs.begin(), allocIDs.end());
-            for(int i=0; i<allocCount; i+=2)
+            else
             {
-                AllocationPointer& allocA = allocations[allocIDs[i]];
-                AllocationPointer& allocB = allocations[allocIDs[i+1]];
-                crossoverAllocations(allocA, allocB, population);
-            }
-
-            // Mutation
-            for(int allocID=0; allocID<allocCount; allocID++)
-            {
-                float shouldMutate = uniformf(rng);
-                if(shouldMutate < MUTATION_RATE)
-                {
-                    mutateIndividualAllocation(allocations[allocID], population[indivID]);
-                }
+                population[indivID].fitness = FLT_MAX;
             }
         }
+        plotLog.log("%d %.2f\n", iteration, bestIndividual.fitness);
     }
 
-    assert(isFeasible(bestIndividual, allocCount, allocations));
-    return bestIndividual;
+    return bestIndividual.position;
 }
 
 Vector computeAllocations(int allocationCount, AllocationPointer* allocations)
 {
     // Create the swarm
     int dimensionCount = allocationCount * DIMENSIONS_PER_ALLOCATION;
-    Vector* population = new Vector[POPULATION_SIZE];
+    Individual* population = new Individual[POPULATION_SIZE];
     for(int i=0; i<POPULATION_SIZE; i++)
     {
-        population[i] = Vector(dimensionCount);
+        population[i].position = Vector(dimensionCount);
+        // NOTE: We initialize the values here just so that our initial solution is feasible
+        for(int allocID=0; allocID<allocationCount; allocID++)
+        {
+            float minStartDate = allocations[allocID].getMinStartDate();
+            allocations[allocID].setStartDate(population[i].position, minStartDate);
+            allocations[allocID].setTenor(population[i].position, 0.0f);
+            allocations[allocID].setAmount(population[i].position, 0.0f);
+        }
     }
 
     // Initialize the swarm
@@ -136,27 +178,29 @@ Vector computeAllocations(int allocationCount, AllocationPointer* allocations)
     mt19937 rng(randDevice());
     for(int i=0; i<POPULATION_SIZE; i++)
     {
-        for(int allocID=0; allocID<allocationCount; allocID++)
+        int retries = 0;
+        do
         {
-            int retries = 0;
-            do
+            for(int allocID=0; allocID<allocationCount; allocID++)
             {
-                initializeAllocation(allocations[allocID], population[i], rng);
-                allocations[allocID].setAmount(population[i], 0); // TODO: See the TODO in pso.cpp
-            } while((retries++ < 5) &&
-                    !isFeasible(population[i], allocationCount, allocations));
+                initializeAllocation(allocations[allocID], population[i].position, rng);
+                allocations[allocID].setAmount(population[i].position, 0); // TODO: See the TODO in pso.cpp
+            }
+        } while((retries++ < 5) &&
+                !isFeasible(population[i].position, allocationCount, allocations));
 
-            if(retries > 1)
-                printf("Alloc %d-%d took %d retries to initialize\n", i, allocID, retries);
-        }
+        if(isFeasible(population[i].position, allocationCount, allocations))
+            population[i].fitness = computeFitness(population[i].position, allocationCount, allocations);
+        else
+            population[i].fitness = FLT_MAX;
 
-        // NOTE: We just make sure to only generate random positions within the feasible region
-        //assert(isFeasible(population[i], allocationCount, allocations));
+        if(retries > 1)
+            printf("Alloc %d took %d retries to initialize\n", i, retries);
     }
     printf("Initialization complete\n");
 
     // Run the GA on our new population
-    Vector bestSolution = population[0];//optimizeSwarm(swarm, dimensionCount, allocationCount, allocations);
+    Vector bestSolution = evolvePopulation(population, dimensionCount, allocationCount, allocations);
 
     // Cleanup
     delete[] population;
