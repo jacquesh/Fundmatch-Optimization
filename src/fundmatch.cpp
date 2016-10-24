@@ -53,18 +53,30 @@ Vector::Vector(const Vector& other)
 
 Vector::~Vector()
 {
-    if(coords)
+    if(this->coords)
     {
-        delete[] coords;
+        delete[] this->coords;
     }
 }
 
 Vector& Vector::operator =(const Vector& other)
 {
-    this->~Vector();
-    this->dimensions = other.dimensions;
-    this->coords = new float[this->dimensions];
-    memcpy(this->coords, other.coords, this->dimensions*sizeof(float));
+    // NOTE: We only need to delete/reallocate memory if the size has changed
+    if(this->dimensions != other.dimensions)
+    {
+        if(this->coords)
+            delete[] this->coords;
+        this->coords = new float[other.dimensions];
+
+        int copySize = min(this->dimensions, other.dimensions) * sizeof(float);
+        memcpy(this->coords, other.coords, copySize);
+
+        this->dimensions = other.dimensions;
+    }
+    else
+    {
+        memcpy(this->coords, other.coords, this->dimensions*sizeof(float));
+    }
 
     return *this;
 }
