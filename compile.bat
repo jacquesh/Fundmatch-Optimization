@@ -15,4 +15,7 @@ ctime -end pso.ctm %ERRORLEVEL%
 
 REM GA
 cl %CompileFlags% ..\src\ga.cpp %CompileFiles% -link %LinkFlags%
+
+REM Heuristic
+cl %CompileFlags% ..\src\heuristic.cpp %CompileFiles% -link %LinkFlags%
 popd
