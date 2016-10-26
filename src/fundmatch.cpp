@@ -292,6 +292,10 @@ bool isFeasible(Vector& position, int allocationCount, AllocationPointer* alloca
         float allocTenor = alloc.getTenor(position);
         float allocAmount = alloc.getAmount(position);
 
+        // NOTE: We don't care what happens in empty allocations
+        if((allocTenor == 0.0f) || (allocAmount == 0.0f))
+            continue;
+
         if((allocTenor < 0.0f) || (allocAmount < 0.0f))
             return false;
 
