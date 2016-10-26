@@ -11,7 +11,6 @@ using namespace std;
 
 Vector computeAllocations(int allocationCount, AllocationPointer* allocations)
 {
-    // TODO: Balance pools
     int* requirementSources = new int[g_input.requirements.size()];
     for(int i=0; i<g_input.requirements.size(); i++)
         requirementSources[i] = -1;
@@ -97,14 +96,14 @@ Vector computeAllocations(int allocationCount, AllocationPointer* allocations)
         if(balanceRemaining[bestPoolIndex] < req.amount)
             bestPoolIndex = -1;
 
-#if 1
+        // NOTE: We use the factor of 0.9 here as an approximate means of taking into consideration
+        //       the fact that balance pools have higher interest than most sources, so it is
+        //       likely to be cheaper in many cases to use the source and not the pool, even though
+        //       the source doesn't quite cover the requirement (and then letting the RCF do that)
         if((bestPoolIndex >= 0) &&
-                (bestSrcIndex == -1))
-#if 0
                 ((bestSrcIndex == -1) ||
                 (g_input.sources[bestSrcIndex].amount < (int)(req.amount*0.9f)) ||
                 (g_input.sources[bestSrcIndex].tenor < (int)(req.tenor*0.9f))))
-#endif
         {
             requirementBalancePools[reqIndex] = bestPoolIndex;
 
@@ -112,9 +111,6 @@ Vector computeAllocations(int allocationCount, AllocationPointer* allocations)
             balanceRemaining[bestPoolIndex] -= req.amount;
         }
         else if(bestSrcIndex >= 0)
-#else
-        if(bestSrcIndex >= 0)
-#endif
         {
             requirementSources[reqIndex] = bestSrcIndex;
             sourcesUsed[bestSrcIndex] = true;
