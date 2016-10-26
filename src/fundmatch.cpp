@@ -313,6 +313,15 @@ bool isFeasible(Vector& position, int allocationCount, AllocationPointer* alloca
         if((allocTenor < 0.0f) || (allocAmount < 0.0f))
             return false;
 
+        RequirementInfo& req = g_input.requirements[alloc.requirementIndex];
+        float reqStart = (float)req.startDate;
+        float reqEnd = (float)(req.startDate + req.tenor);
+        float overlapStart = max(allocStart, reqStart);
+        float overlapEnd = min(allocEnd, reqEnd);
+        float overlapDuration = overlapEnd - overlapStart;
+        if(overlapDuration < 1.0f)
+            return false;
+
         if(alloc.sourceIndex >= 0)
         {
             SourceInfo& source = g_input.sources[alloc.sourceIndex];
