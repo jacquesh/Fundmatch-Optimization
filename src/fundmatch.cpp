@@ -472,10 +472,10 @@ float computeFitness(Vector& position, int allocationCount, AllocationPointer* a
         if(allocEndIndex < allocationCount)
             nextAllocEndTime = allocationsByEnd[allocEndIndex]->getEndDate(position);
         if(reqStartIndex < g_input.requirements.size())
-            nextReqStartTime = (float)g_input.requirements[reqStartIndex].startDate;
+            nextReqStartTime = (float)g_input.requirements[g_input.requirementsByStart[reqStartIndex]].startDate;
         if(reqEndIndex < g_input.requirements.size())
-            nextReqEndTime = (float)g_input.requirements[reqEndIndex].startDate +
-                             (float)g_input.requirements[reqEndIndex].tenor;
+            nextReqEndTime = (float)g_input.requirements[g_input.requirementsByEnd[reqEndIndex]].startDate +
+                             (float)g_input.requirements[g_input.requirementsByEnd[reqEndIndex]].tenor;
 
         float nextAllocEventTime = min(nextAllocStartTime, nextAllocEndTime);
         float nextReqEventTime = min(nextReqStartTime, nextReqEndTime);
