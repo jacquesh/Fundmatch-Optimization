@@ -205,6 +205,20 @@ void initializeAllocation(AllocationPointer& alloc, Vector& position,
     alloc.setAmount(position, amount);
 }
 
+int maxAllocationTenor(SourceInfo& source, RequirementInfo& req)
+{
+    int sourceStart = source.startDate;
+    int requireStart = req.startDate;
+    int sourceEnd = source.startDate + source.tenor;
+    int requireEnd = req.startDate + req.tenor;
+
+    int validStart = max(sourceStart, requireStart);
+    int validEnd = min(sourceEnd, requireEnd);
+
+    // NOTE: We need there to be an overlap of at least 1 month (0-length loans are irrelevant)
+    return validEnd - validStart;
+}
+
 float maxAllocationAmount(Vector& position, int allocationCount, AllocationPointer* allocations, int allocID)
 {
     float result;

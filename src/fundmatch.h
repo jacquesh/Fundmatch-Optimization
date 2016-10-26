@@ -112,6 +112,9 @@ bool loadRequirementData(const char* inputFilename, InputData& input);
 // Gives valid initial values to the given position vector, using the given random generators
 void initializeAllocation(AllocationPointer& alloc, Vector& position, std::mt19937& rng);
 
+// Returns the maximum sensible (and feasible) number of months to allocate from source to req
+int maxAllocationTenor(SourceInfo& source, RequirementInfo& req);
+
 // Returns the maximum feasible amount that be loaned as part of the given allocation
 float maxAllocationAmount(Vector& position, int allocationCount, AllocationPointer* allocations, int allocID);
 

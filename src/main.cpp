@@ -8,26 +8,6 @@
 
 using namespace std;
 
-bool isAllocationPairValid(SourceInfo& source, RequirementInfo& req)
-{
-    if(source.taxClass != req.taxClass)
-        return false;
-
-    int sourceStart = source.startDate;
-    int requireStart = req.startDate;
-    int sourceEnd = source.startDate + source.tenor;
-    int requireEnd = req.startDate + req.tenor;
-
-    int validStart = max(sourceStart, requireStart);
-    int validEnd = min(sourceEnd, requireEnd);
-
-    // NOTE: We need there to be an overlap of at least 1 month (0-length loans are irrelevant)
-    if(validEnd >= validStart+1)
-        return true;
-
-    return false;
-}
-
 int min(int a, int b)
 {
     if(a < b)
@@ -63,7 +43,9 @@ int main()
     {
         for(int sourceID=0; sourceID<g_input.sources.size(); sourceID++)
         {
-            if(isAllocationPairValid(g_input.sources[sourceID], g_input.requirements[reqID]))
+            SourceInfo& src = g_input.sources[sourceID];
+            RequirementInfo& req = g_input.requirements[reqID];
+            if((src.taxClass == req.taxClass) && (maxAllocationTenor(src, req) >= 1))
             {
                 validAllocationCount++;
             }
@@ -93,7 +75,9 @@ int main()
     {
         for(int sourceID=0; sourceID<g_input.sources.size(); sourceID++)
         {
-            if(isAllocationPairValid(g_input.sources[sourceID], g_input.requirements[reqID]))
+            RequirementInfo& req = g_input.requirements[reqID];
+            SourceInfo& src = g_input.sources[sourceID];
+            if((src.taxClass == req.taxClass) && (maxAllocationTenor(src, req) >= 1))
             {
                 allocations[currentAllocIndex].sourceIndex = sourceID;
                 allocations[currentAllocIndex].requirementIndex = reqID;
