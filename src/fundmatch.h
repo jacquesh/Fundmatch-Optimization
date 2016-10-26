@@ -32,7 +32,7 @@ struct SourceInfo
 struct BalancePoolInfo
 {
     // TODO: Decide what other values we need here (including for Tim)
-    float amount;
+    int amount;
 };
 
 struct RequirementInfo

@@ -170,7 +170,7 @@ float AllocationPointer::getMaxAmount(const Vector& data) const
     else
     {
         BalancePoolInfo& pool = g_input.balancePools[this->balancePoolIndex];
-        result = min(result, pool.amount); // TODO: Use a balancePool-equivalent of getMaxAllocationAmount?
+        result = min(result, (float)pool.amount); // TODO: Use a balancePool-equivalent of getMaxAllocationAmount?
     }
     return result;
 }
@@ -348,7 +348,7 @@ bool isFeasible(Vector& position, int allocationCount, AllocationPointer* alloca
     float* balancePoolValueRemaining = new float[g_input.balancePools.size()];
     for(int i=0; i<g_input.balancePools.size(); i++)
     {
-        balancePoolValueRemaining[i] = g_input.balancePools[i].amount;
+        balancePoolValueRemaining[i] = (float)g_input.balancePools[i].amount;
     }
 
     int allocStartIndex = 0;
@@ -650,7 +650,7 @@ bool loadBalancePoolData(const char* inputFilename, InputData& input)
         int balanceID = atoi(csvIn.field(0));
         assert(balanceID == i+1);
 
-        newInfo.amount = (float)atof(csvIn.field(9));
+        newInfo.amount = (int)atof(csvIn.field(9));
 
         input.balancePools.push_back(newInfo);
     }
