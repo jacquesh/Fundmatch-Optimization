@@ -82,7 +82,6 @@ struct AllocationPointer
     float getMaxAmount(const Vector& data) const;
 };
 
-// TODO: Convert to vector<infotype> instead of arrays
 struct InputData
 {
     std::vector<SourceInfo> sources;

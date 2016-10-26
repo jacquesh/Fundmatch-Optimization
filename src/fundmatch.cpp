@@ -448,137 +448,56 @@ bool isFeasible(Vector& position, int allocationCount, AllocationPointer* alloca
 
 float computeFitness(Vector& position, int allocationCount, AllocationPointer* allocations)
 {
-    vector<AllocationPointer*> allocationsByStart;
-    for(int i=0; i<allocationCount; i++)
-        allocationsByStart.push_back(&allocations[i]);
-    vector<AllocationPointer*> allocationsByEnd(allocationsByStart);
-
-    auto allocStartDateComparison = [&position](AllocationPointer* a, AllocationPointer* b)
-    {
-        return a->getStartDate(position) < b->getStartDate(position);
-    };
-    auto allocEndDateComparison = [&position](AllocationPointer* a, AllocationPointer* b)
-    {
-        return a->getEndDate(position) < b->getEndDate(position);
-    };
-    sort(allocationsByStart.begin(), allocationsByStart.end(), allocStartDateComparison);
-    sort(allocationsByEnd.begin(), allocationsByEnd.end(), allocEndDateComparison);
-
-    float* requirementValueRemaining = new float[g_input.requirements.size()];
-    for(int i=0; i<g_input.requirements.size(); i++)
-    {
-        requirementValueRemaining[i] = (float)g_input.requirements[i].amount;
-    }
-    bool* requirementActive = new bool[g_input.requirements.size()];
-    for(int i=0; i<g_input.requirements.size(); i++)
-        requirementActive[i] = false;
-
-    float firstAllocationTime = allocationsByStart[0]->getStartDate(position);
-    float firstRequirementTime = (float)g_input.requirements[g_input.requirementsByStart[0]].startDate;
-
     float result = 0.0f;
-    float currentTime = min(firstAllocationTime, firstRequirementTime);
-    int allocStartIndex = 0;
-    int allocEndIndex = 0;
-    int reqStartIndex = 0;
-    int reqEndIndex = 0;
-    vector<AllocationPointer*> activeAllocations;
-    while((allocStartIndex < allocationCount) || (allocEndIndex < allocationCount) ||
-          (reqStartIndex < g_input.requirements.size()) || (reqEndIndex < g_input.requirements.size()))
+    for(auto iter=g_input.requirements.begin(); iter!=g_input.requirements.end(); iter++)
     {
-        float nextAllocStartTime = FLT_MAX;
-        float nextAllocEndTime = FLT_MAX;
-        float nextReqStartTime = FLT_MAX;
-        float nextReqEndTime = FLT_MAX;
-        if(allocStartIndex < allocationCount)
-            nextAllocStartTime = allocationsByStart[allocStartIndex]->getStartDate(position);
-        if(allocEndIndex < allocationCount)
-            nextAllocEndTime = allocationsByEnd[allocEndIndex]->getEndDate(position);
-        if(reqStartIndex < g_input.requirements.size())
-            nextReqStartTime = (float)g_input.requirements[g_input.requirementsByStart[reqStartIndex]].startDate;
-        if(reqEndIndex < g_input.requirements.size())
-            nextReqEndTime = (float)g_input.requirements[g_input.requirementsByEnd[reqEndIndex]].startDate +
-                             (float)g_input.requirements[g_input.requirementsByEnd[reqEndIndex]].tenor;
-
-        float nextAllocEventTime = min(nextAllocStartTime, nextAllocEndTime);
-        float nextReqEventTime = min(nextReqStartTime, nextReqEndTime);
-
-        float previousTime = currentTime;
-        currentTime = min(nextAllocEventTime, nextReqEventTime);
-        float timeElapsed = currentTime - previousTime;
-
-        // Add up the costs of the allocations for this timestep
-        for(int j=0; j<activeAllocations.size(); j++)
-        {
-            AllocationPointer* activeAlloc = activeAllocations[j];
-            float interestRate = BALANCEPOOL_INTEREST_RATE;
-            if(activeAlloc->sourceIndex != -1)
-                interestRate = g_input.sources[activeAlloc->sourceIndex].interestRate;
-
-            result += timeElapsed * activeAlloc->getAmount(position) * interestRate;
-        }
-
-        // Add the cost of the unsatisfied requirements (IE the cost to satisfy them via RCF)
-        for(int reqID=0; reqID<g_input.requirements.size(); reqID++)
-        {
-            if(requirementActive[reqID] && (requirementValueRemaining[reqID] > 0.0f))
-                result += timeElapsed * requirementValueRemaining[reqID] * RCF_INTEREST_RATE;
-        }
-
-        // Handle the event that we stopped on, depending on what type it is
-        if(nextReqEventTime <= nextAllocEventTime)
-        {
-            // Handle the requirement event
-            if(nextReqEndTime <= nextReqStartTime)
-            {
-                // Handle the requirement-end event
-                int reqIndex = g_input.requirementsByEnd[reqEndIndex];
-                requirementActive[reqIndex] = false;
-                reqEndIndex++;
-            }
-            else
-            {
-                // Handle the requirement-start event
-                int reqIndex = g_input.requirementsByStart[reqStartIndex];
-                requirementActive[reqIndex] = true;
-                reqStartIndex++;
-            }
-        }
-        else
-        {
-            // Handle the allocation event
-            // NOTE: It is significant that this is a strict inequality, because for very small
-            //       tenor, we still want to handle the allocation start first
-            if(nextAllocEndTime < nextAllocStartTime)
-            {
-                // Handle the allocation-end event
-                AllocationPointer* alloc = nullptr;
-                for(auto iter = activeAllocations.begin(); iter != activeAllocations.end(); iter++)
-                {
-                    if(*iter == allocationsByEnd[allocEndIndex])
-                    {
-                        alloc = *iter;
-                        activeAllocations.erase(iter);
-                        break;
-                    }
-                }
-                assert(alloc != nullptr);
-                allocEndIndex++;
-                requirementValueRemaining[alloc->requirementIndex] += alloc->getAmount(position);
-            }
-            else
-            {
-                // Handle the allocation-start event
-                AllocationPointer* alloc = allocationsByStart[allocStartIndex];
-                activeAllocations.push_back(alloc);
-                allocStartIndex++;
-                requirementValueRemaining[alloc->requirementIndex] -= alloc->getAmount(position);
-            }
-        }
+        float tenor = (float)iter->tenor;
+        float amount = (float)iter->amount;
+        result += tenor*amount*RCF_INTEREST_RATE;
     }
 
-    delete[] requirementValueRemaining;
-    delete[] requirementActive;
+    for(int allocID=0; allocID<allocationCount; allocID++)
+    {
+        AllocationPointer& alloc = allocations[allocID];
+        float allocStart = alloc.getStartDate(position);
+        float allocTenor = alloc.getTenor(position);
+        float allocAmount = alloc.getAmount(position);
+        float allocEnd = allocStart + allocTenor;
+
+        if((allocTenor == 0.0f) || (allocAmount == 0.0f))
+            continue;
+
+        RequirementInfo& requirement = g_input.requirements[alloc.requirementIndex];
+        float requirementStart = (float)requirement.startDate;
+        float requirementTenor = (float)requirement.tenor;
+        float requirementAmount = (float)requirement.amount;
+        float requirementEnd = requirementStart + requirementTenor;
+
+        float interestRate = BALANCEPOOL_INTEREST_RATE;
+        if(alloc.sourceIndex != -1)
+            interestRate = g_input.sources[alloc.sourceIndex].interestRate;
+
+        if(allocStart < requirementStart)
+        {
+            // Add the interest for the time before the requirement start
+            float extraTime = requirementStart - allocStart;
+            result += extraTime * allocAmount * interestRate;
+        }
+        if(allocEnd > requirementEnd)
+        {
+            // Add the interest for the time after the requirement end
+            float extraTime = allocEnd - requirementEnd;
+            result += extraTime * allocAmount * interestRate;
+        }
+
+        // Subtract the difference in interest for the duration of the allocation
+        float overlapStart = max(allocStart, requirementStart);
+        float overlapEnd = min(allocEnd, requirementEnd);
+        float overlapTime = overlapEnd - overlapStart;
+        assert(overlapTime >= 0.0f);
+        float interestDifference = RCF_INTEREST_RATE - interestRate;
+        result -= overlapTime * allocAmount * interestDifference;
+    }
 
     return result;
 }
