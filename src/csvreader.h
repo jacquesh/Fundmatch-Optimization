@@ -68,7 +68,8 @@ int CsvReader::fieldCount()
 bool CsvReader::initialize(const char* filename)
 {
     fileHandle = fopen(filename, "r");
-    // TODO: Error checking
+    if(!fileHandle)
+        return false;
 
     char c;
     int fileEntryCount = 0;
