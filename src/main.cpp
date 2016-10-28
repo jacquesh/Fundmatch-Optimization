@@ -8,30 +8,45 @@
 
 using namespace std;
 
-int main()
+const int MAX_FILEPATH_LENGTH = 512;
+
+int main(int argc, char** argv)
 {
     int64_t clockFrequency = getClockFrequency();
     int64_t loadStartTime = getClockValue();
 
-    loadSourceData("data/DSt_sources.csv", g_input);
+    const char* dataName = (argc > 1) ? argv[1] : "DS1";
+
+    char sourceFilename[MAX_FILEPATH_LENGTH];
+    snprintf(sourceFilename, MAX_FILEPATH_LENGTH, "data/%s_sources.csv", dataName);
+    if(!loadSourceData(sourceFilename, g_input))
+    {
+        printf("Error: Unable to load source data from %s\n", sourceFilename);
+        return -1;
+    }
     printf("Loaded %zd sources\n", g_input.sources.size());
 
-    loadBalancePoolData("data/DSt_balancepools.csv", g_input);
+    char balancePoolFilename[MAX_FILEPATH_LENGTH];
+    snprintf(balancePoolFilename, MAX_FILEPATH_LENGTH, "data/%s_balancepools.csv", dataName);
+    if(!loadBalancePoolData(balancePoolFilename, g_input))
+    {
+        printf("Error: Unable to load balance pool data from %s\n", balancePoolFilename);
+        return -1;
+    }
     printf("Loaded %zd balance pools\n", g_input.balancePools.size());
 
-    loadRequirementData("data/DSt_requirements.csv", g_input);
+    char requirementFilename[MAX_FILEPATH_LENGTH];
+    snprintf(requirementFilename, MAX_FILEPATH_LENGTH, "data/%s_requirements.csv", dataName);
+    if(!loadRequirementData(requirementFilename, g_input))
+    {
+        printf("Error: Unable to load requirement data from %s\n", requirementFilename);
+        return -1;
+    }
     printf("Loaded %zd requirements\n", g_input.requirements.size());
-
-#if 0
-    AllocationInfo* manualAllocations;
-    int manualAllocationCount;
-    loadAllocationData("data/DS1_allocations.csv", &manualAllocations, manualAllocationCount);
-    printf("Loaded %d allocations\n", manualAllocationCount);
-#endif
 
     // Count the number of valid allocations, so we know how many to construct below
     // NOTE: First allocations are from balance pools in our valid allocation list
-    int validAllocationCount = g_input.balancePools.size() * g_input.requirements.size();
+    int validAllocationCount = (int)(g_input.balancePools.size() * g_input.requirements.size());
     for(int reqID=0; reqID<g_input.requirements.size(); reqID++)
     {
         for(int sourceID=0; sourceID<g_input.sources.size(); sourceID++)
@@ -114,6 +129,18 @@ int main()
     Vector solution = computeAllocations(validAllocationCount, allocations);
     assert(isFeasible(solution, validAllocationCount, allocations));
     float solutionFitness = computeFitness(solution, validAllocationCount, allocations);
+
+    vector<AllocationPointer> manAllocs;
+    char allocationFilename[MAX_FILEPATH_LENGTH];
+    snprintf(allocationFilename, MAX_FILEPATH_LENGTH, "data/%s_allocations.csv", dataName);
+    Vector manualSolution = loadAllocationData(allocationFilename, manAllocs);
+    if(manualSolution.dimensions > 0)
+    {
+        //assert(isFeasible(manualSolution, validAllocationCount, allocations));
+        float manualFitness = computeFitness(manualSolution, (int)manAllocs.size(), &manAllocs[0]);
+        printf("Manual solution has %zd allocations and costs %f\n",
+                manAllocs.size(), manualFitness);
+    }
 
     int64_t computeEndTime = getClockValue();
     float computeSeconds = (float)(computeEndTime - loadEndTime)/(float)clockFrequency;
