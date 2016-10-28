@@ -4,3 +4,5 @@ data/
 *.swp
 *.swo
 *.json
+*.dat
+*.gp
