@@ -307,11 +307,8 @@ bool isFeasible(Vector& position, int allocationCount, AllocationPointer* alloca
         float allocAmount = alloc.getAmount(position);
 
         // NOTE: We don't care what happens in empty allocations
-        if((allocTenor == 0.0f) || (allocAmount == 0.0f))
+        if((allocTenor <= 0.0f) || (allocAmount <= 0.0f))
             continue;
-
-        if((allocTenor < 0.0f) || (allocAmount < 0.0f))
-            return false;
 
         RequirementInfo& req = g_input.requirements[alloc.requirementIndex];
         float reqStart = (float)req.startDate;
@@ -320,7 +317,7 @@ bool isFeasible(Vector& position, int allocationCount, AllocationPointer* alloca
         float overlapEnd = min(allocEnd, reqEnd);
         float overlapDuration = overlapEnd - overlapStart;
         if(overlapDuration < 1.0f)
-            return false;
+            continue;
 
         if(alloc.sourceIndex >= 0)
         {
@@ -391,6 +388,12 @@ bool isFeasible(Vector& position, int allocationCount, AllocationPointer* alloca
         //       tenor, we still want to handle the allocation start first
         if(nextAllocEndTime < nextAllocStartTime)
         {
+            AllocationPointer& oldAlloc = *allocationsByEnd[allocEndIndex];
+            if(oldAlloc.getTenor(position) < 0.0f)
+            {
+                allocEndIndex++;
+                continue;
+            }
             if(allocationsByEnd[allocEndIndex]->sourceIndex >= 0)
             {
                 // Handle the allocation-end event
@@ -422,6 +425,9 @@ bool isFeasible(Vector& position, int allocationCount, AllocationPointer* alloca
         {
             // Handle the allocation-start event
             AllocationPointer* alloc = allocationsByStart[allocStartIndex];
+            allocStartIndex++;
+            if(alloc->getTenor(position) < 0.0f)
+                continue;
             activeAllocations.push_back(alloc);
             float allocAmount = alloc->getAmount(position);
             if(alloc->sourceIndex >= 0)
@@ -437,7 +443,6 @@ bool isFeasible(Vector& position, int allocationCount, AllocationPointer* alloca
                 if(balancePoolValueRemaining[alloc->balancePoolIndex] < 0.0f)
                     return false;
             }
-            allocStartIndex++;
         }
     }
     delete[] balancePoolValueRemaining;
@@ -638,11 +643,8 @@ bool loadSourceData(const char* inputFilename, InputData& input)
     if(!csvIn.initialize(inputFilename))
         return false;
 
-    int entryCount = csvIn.entryCount();
-    if(entryCount == 0)
-        return false;
-
     assert(csvIn.fieldCount() == 9);
+    int entryCount = csvIn.entryCount();
     for(int i=0; i<entryCount; i++)
     {
         SourceInfo newInfo = {};
@@ -675,11 +677,8 @@ bool loadBalancePoolData(const char* inputFilename, InputData& input)
     if(!csvIn.initialize(inputFilename))
         return false;
 
-    int entryCount = csvIn.entryCount();
-    if(entryCount == 0)
-        return false;
-
     assert(csvIn.fieldCount() == 10);
+    int entryCount = csvIn.entryCount();
     for(int i=0; i<entryCount; i++)
     {
         BalancePoolInfo newInfo = {};
