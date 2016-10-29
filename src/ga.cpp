@@ -56,13 +56,29 @@ void mutateIndividual(Vector& individual, int allocCount, AllocationPointer* all
     }
 }
 
+static void crossoverIndividualAllocation(Vector& indivA, Vector& indivB, AllocationPointer& alloc)
+{
+    float tempStartDate = alloc.getStartDate(indivA);
+    float tempTenor = alloc.getTenor(indivA);
+    float tempAmount = alloc.getAmount(indivA);
+
+    alloc.setStartDate(indivA, alloc.getStartDate(indivB));
+    alloc.setTenor(indivA, alloc.getTenor(indivB));
+    alloc.setAmount(indivA, alloc.getAmount(indivB));
+
+    alloc.setStartDate(indivB, tempStartDate);
+    alloc.setTenor(indivB, tempTenor);
+    alloc.setAmount(indivB, tempAmount);
+}
+
 void crossoverIndividuals(Vector& individualA, Vector& individualB,
                           int allocationCount, AllocationPointer* allocations)
 {
     static random_device randDevice;
     static mt19937 rng(randDevice());
-    uniform_int_distribution<int> randomIndividual(0, allocationCount-1); // Endpoints are inclusive
+#if 0
     // 1-point crossover
+    uniform_int_distribution<int> randomIndividual(0, allocationCount-1); // Endpoints are inclusive
     AllocationPointer& alloc = allocations[randomIndividual(rng)];
 
     float tempStartDate = alloc.getStartDate(individualA);
@@ -76,6 +92,33 @@ void crossoverIndividuals(Vector& individualA, Vector& individualB,
     alloc.setStartDate(individualB, tempStartDate);
     alloc.setTenor(individualB, tempTenor);
     alloc.setAmount(individualB, tempAmount);
+#endif
+
+#if 0
+    // N-point crossover
+    uniform_real_distribution<float> shouldCrossover(0.0f, 1.0f);
+    for(int allocID=0; allocID<allocationCount; allocID++)
+    {
+        if(!(shouldCrossover(rng) <= CROSSOVER_RATE))
+            continue;
+
+        AllocationPointer& alloc = allocations[allocID];
+        crossoverIndividualAllocation(individualA, individualB, alloc);
+    }
+#endif
+
+    // Requirement crossover
+    uniform_int_distribution<int> randomReq(0, (int)g_input.requirements.size()-1);
+    int crossedReq = randomReq(rng);
+    for(int allocID=0; allocID<allocationCount; allocID++)
+    {
+        AllocationPointer& alloc = allocations[allocID];
+        if(alloc.requirementIndex != crossedReq)
+            continue;
+
+        crossoverIndividualAllocation(individualA, individualB, alloc);
+    }
+
 }
 
 Vector evolvePopulation(Individual* population, int dimensionCount,
