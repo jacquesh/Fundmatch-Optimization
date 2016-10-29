@@ -127,7 +127,8 @@ bool isFeasible(Vector& position, int allocationCount, AllocationPointer* alloca
 float computeFitness(Vector& position, int allocationCount, AllocationPointer* allocations);
 
 // Serialize the sources, requirements and allocations into a JSON string and writes it to file
-void writeOutputData(InputData input, int allocCount, AllocationPointer* allocations,
+// Returns the number of non-empty requirements (>0 tenor and amount) that were written
+int writeOutputData(InputData input, int allocCount, AllocationPointer* allocations,
                      Vector solution, const char* outFilename);
 
 #endif

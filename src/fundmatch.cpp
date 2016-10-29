@@ -767,7 +767,7 @@ bool loadAllocationData(const char* inputFilename, AllocationInfo** allocations,
 }
 #endif
 
-void writeOutputData(InputData input, int allocCount, AllocationPointer* allocations,
+int writeOutputData(InputData input, int allocCount, AllocationPointer* allocations,
                      Vector solution, const char* outFilename)
 {
     Jzon::Node rootNode = Jzon::object();
@@ -805,6 +805,7 @@ void writeOutputData(InputData input, int allocCount, AllocationPointer* allocat
         reqNodeList.add(reqNode);
     }
 
+    int nonEmptyAllocationCount = 0;
     Jzon::Node allocNodeList = Jzon::array();
     for(int allocID=0; allocID<allocCount; allocID++)
     {
@@ -827,6 +828,7 @@ void writeOutputData(InputData input, int allocCount, AllocationPointer* allocat
         allocNode.add("tenor", tenor);
         allocNode.add("amount", amount);
         allocNodeList.add(allocNode);
+        nonEmptyAllocationCount++;
     }
     rootNode.add("sources", sourceNodeList);
     rootNode.add("requirements", reqNodeList);
@@ -836,4 +838,6 @@ void writeOutputData(InputData input, int allocCount, AllocationPointer* allocat
     std::ofstream outFile(outFilename, std::ofstream::out);
     writer.writeStream(rootNode, outFile);
     outFile.close();
+
+    return nonEmptyAllocationCount;
 }

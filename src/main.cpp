@@ -144,8 +144,9 @@ int main(int argc, char** argv)
 
     int64_t computeEndTime = getClockValue();
     float computeSeconds = (float)(computeEndTime - loadEndTime)/(float)clockFrequency;
-    printf("Optimization completed in %.2fs - final fitness was %f\n",
-            computeSeconds, solutionFitness);
 
-    writeOutputData(g_input, validAllocationCount, allocations, solution, "output.json");
+    int generatedAllocs = writeOutputData(g_input, validAllocationCount, allocations,
+                                          solution, "output.json");
+    printf("Optimization completed in %.2fs - final fitness was %f from %d allocations\n",
+            computeSeconds, solutionFitness, generatedAllocs);
 }
