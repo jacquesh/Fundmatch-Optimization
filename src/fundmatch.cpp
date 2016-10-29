@@ -732,40 +732,43 @@ bool loadRequirementData(const char* inputFilename, InputData& input)
     return true;
 }
 
-#if 0
-bool loadAllocationData(const char* inputFilename, AllocationInfo** allocations, int& allocationCount)
+Vector loadAllocationData(const char* inputFilename, vector<AllocationPointer>& allocations)
 {
     CsvReader csvIn;
     if(!csvIn.initialize(inputFilename))
-        return false;
+        return Vector();
 
     int entryCount = csvIn.entryCount();
     if(entryCount == 0)
-        return false;
+        return Vector();
 
+    Vector result(entryCount * DIMENSIONS_PER_ALLOCATION);
     assert(csvIn.fieldCount() == 7);
     for(int i=0; i<entryCount; i++)
     {
-        AllocationInfo newInfo = {};
-
         csvIn.readNextEntry();
-        newInfo.requirementIndex = atoi(csvIn.field(1));
-        newInfo.sourceIndex = atoi(csvIn.field(2));
-        newInfo.balanceIndex = atoi(csvIn.field(3));
+        AllocationPointer newAlloc = {};
+
+        // NOTE: We subtract 1 here because we're using 0-based indices and the data uses 1-based
+        newAlloc.requirementIndex = atoi(csvIn.field(1)) - 1;
+        newAlloc.sourceIndex = atoi(csvIn.field(2)) - 1;
+        newAlloc.balancePoolIndex = atoi(csvIn.field(3)) - 1;
 
         int day, month, year;
-        sscanf(csvIn.field(2), "%d/%d/%d", &day, &month, &year);
-        newInfo.startDate = year*12 + month;
+        sscanf(csvIn.field(4), "%d/%d/%d", &day, &month, &year);
+        int startDate = year*12 + month;
 
-        newInfo.tenor = atoi(csvIn.field(5));
-        newInfo.amount = atoi(csvIn.field(6));
+        int tenor = atoi(csvIn.field(5));
+        int amount = atoi(csvIn.field(6));
 
-        allocations.push_back(newInfo);
+        newAlloc.setStartDate(result, (float)startDate);
+        newAlloc.setTenor(result, (float)tenor);
+        newAlloc.setAmount(result, (float)amount);
+
+        allocations.push_back(newAlloc);
     }
-
-    return true;
+    return result;
 }
-#endif
 
 int writeOutputData(InputData input, int allocCount, AllocationPointer* allocations,
                      Vector solution, const char* outFilename)

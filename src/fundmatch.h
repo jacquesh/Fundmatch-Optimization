@@ -106,7 +106,7 @@ bool loadBalancePoolData(const char* inputFilename, InputData& input);
 // Returns true iff the function succeeded, if false is returned then input will not be modified.
 bool loadRequirementData(const char* inputFilename, InputData& input);
 
-//bool loadAllocationData(const char* inputFilename, AllocationInfo** allocations, int& allocationCount);
+Vector loadAllocationData(const char* inputFilename, std::vector<AllocationPointer>& allocations);
 
 // Gives valid initial values to the given position vector, using the given random generators
 void initializeAllocation(AllocationPointer& alloc, Vector& position, std::mt19937& rng);
