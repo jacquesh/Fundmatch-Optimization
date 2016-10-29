@@ -171,8 +171,18 @@ Vector evolvePopulation(Individual* population, int dimensionCount,
         // Child selection
         for(int parentID=0; parentID<PARENT_COUNT; parentID++)
         {
+            float maxFitness = population[0].fitness;
+            int maxFitnessIndex = 0;
+            for(int i=1; i<POPULATION_SIZE; i++)
+            {
+                if(population[i].fitness > maxFitness)
+                {
+                    maxFitness = population[i].fitness;
+                    maxFitnessIndex = i;
+                }
+            }
             int replacedIndiv = uniformIndiv(rng);
-            population[replacedIndiv] = parentList[parentID];
+            population[maxFitnessIndex] = parentList[parentID];
         }
 
         // Evaluation
