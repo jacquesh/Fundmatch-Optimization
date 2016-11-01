@@ -377,15 +377,15 @@ float measureConstraintViolation(Vector& position, int allocationCount, Allocati
 bool isPositionBetter(Vector& newPosition, Vector& testPosition,
                       int allocationCount, AllocationPointer* allocations)
 {
-    float newViolation = measureConstraintViolation(newPosition, allocationCount, allocations);
-    float testViolation = measureConstraintViolation(testPosition, allocationCount, allocations);
+    float newViolation = newPosition.constraintViolation;
+    float testViolation = testPosition.constraintViolation;
     assert(newViolation >= 0.0f);
     assert(testViolation >= 0.0f);
 
     if((newViolation == 0.0f) && (testViolation == 0.0f))
     {
-        float newFitness = computeFitness(newPosition, allocationCount, allocations);
-        float testFitness = computeFitness(testPosition, allocationCount, allocations);
+        float newFitness = newPosition.fitness;
+        float testFitness = testPosition.fitness;
         if(newFitness < testFitness)
             return true;
         return false;
