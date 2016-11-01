@@ -135,12 +135,25 @@ Vector evolvePopulation(Individual* population, int dimensionCount,
         // Parent Selection
         for(int parentID=0; parentID<PARENT_COUNT; parentID++)
         {
-            Individual* tourneyWinner = &population[uniformIndiv(rng)];
-            for(int i=0; i<TOURNAMENT_SIZE-1; i++)
+            Vector* tourneyWinner = nullptr;
+            for(int i=0; i<TOURNAMENT_SIZE; i++)
             {
-                Individual* contestant = &population[uniformIndiv(rng)];
-                if(contestant->fitness < tourneyWinner->fitness)
+                Vector* contestant = nullptr;
+                int contestantID = uniformIndivOrBest(rng);
+                if(contestantID == -1)
+                    contestant = &bestIndividual;
+                else
+                    contestant = &population[contestantID];
+
+                assert(contestant != nullptr);
+                if(tourneyWinner == nullptr)
+                {
                     tourneyWinner = contestant;
+                }
+                else if(isPositionBetter(*contestant, *tourneyWinner, allocCount, allocations))
+                {
+                    tourneyWinner = contestant;
+                }
             }
 
             parentList[parentID] = *tourneyWinner;
