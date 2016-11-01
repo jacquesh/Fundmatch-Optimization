@@ -160,8 +160,8 @@ float AllocationPointer::getMaxTenor(const Vector& data) const
     float result = (float)req.tenor;
     if(this->sourceIndex >= 0)
     {
-        SourceInfo& source = g_input.sources[this->sourceIndex];
-        result = min(result, (float)source.tenor); // TODO: Should we take startDate into account?
+        SourceInfo& src = g_input.sources[this->sourceIndex];
+        result = (float)maxAllocationTenor(src, req);
     }
     // NOTE: If this allocation comes from a balance pool then the tenor is determined
     //       entirely by that of the requirement
@@ -175,12 +175,12 @@ float AllocationPointer::getMaxAmount(const Vector& data) const
     if(this->sourceIndex >= 0)
     {
         SourceInfo& source = g_input.sources[this->sourceIndex];
-        result = min(result, (float)source.amount); // TODO: Use getMaxAllocationAmount?
+        result = min(result, (float)source.amount);
     }
     else
     {
         BalancePoolInfo& pool = g_input.balancePools[this->balancePoolIndex];
-        result = min(result, (float)pool.amount); // TODO: Use a balancePool-equivalent of getMaxAllocationAmount?
+        result = min(result, (float)pool.amount);
     }
     return result;
 }
