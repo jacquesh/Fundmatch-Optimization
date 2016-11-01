@@ -147,6 +147,6 @@ int main(int argc, char** argv)
 
     int generatedAllocs = writeOutputData(g_input, validAllocationCount, allocations,
                                           solution, "output.json");
-    printf("Optimization completed in %.2fs - final fitness was %f from %d allocations\n",
+    printf("Optimization completed in %.2fs - final fitness was %.2f from %d allocations\n",
             computeSeconds, solutionFitness, generatedAllocs);
 }
