@@ -1,5 +1,5 @@
 import sys
-from random import randint
+from random import random, randint
 
 def dateval_to_str(value):
     year = value // 12
@@ -34,7 +34,7 @@ def generate(output_name, src_count=5, req_count=5, bpl_count=2, duration=24, ma
         src_date_str = dateval_to_str(src_date)
         src_tenor = min(max_tenor, randint(1, end_date - src_date))
         src_amount = min_amount + amount_step_size * randint(0, amount_steps)
-        src_interest_rate = 0.09
+        src_interest_rate = round(0.07 + random() * (0.12 - 0.07), 2)
         src_file.write("%d,,%s,%d,%d,,,,%.2f\n" %
                 (i+1, src_date_str, src_tenor, src_amount, src_interest_rate))
 
