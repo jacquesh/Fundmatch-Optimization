@@ -12,11 +12,6 @@ const float MUTATION_RATE = 0.10f;
 const int TOURNAMENT_SIZE = 40;
 const int PARENT_COUNT = 6;
 
-struct Individual
-{
-    Vector position;
 
-    float fitness;
-};
 
 #endif

@@ -112,23 +112,30 @@ void crossoverIndividuals(Vector& individualA, Vector& individualB,
 #endif
 }
 
-Vector evolvePopulation(Individual* population, int dimensionCount,
+Vector evolvePopulation(Vector* population, int dimensionCount,
                         int allocCount, AllocationPointer* allocations)
 {
-    Individual bestIndividual = population[0];
+    int bestIndivIndex = 0;
     for(int indivID=1; indivID<POPULATION_SIZE; indivID++)
     {
-        if(population[indivID].fitness < bestIndividual.fitness)
-            bestIndividual = population[indivID];
+        if(isPositionBetter(population[indivID], population[bestIndivIndex],
+                            allocCount, allocations))
+        {
+            bestIndivIndex = indivID;
+        }
     }
-    plotLog.log("%d %.2f\n", -1, bestIndividual.fitness);
+
+    Vector bestIndividual = population[bestIndivIndex];
+    if(bestIndividual.fitness != FLT_MAX)
+        plotLog.log("%d %.2f\n", -1, bestIndividual.fitness);
 
     mt19937 rng(randDevice());
     uniform_real_distribution<float> uniformf(0.0f, 1.0f);
     uniform_int_distribution<int> uniformIndiv(0, POPULATION_SIZE-1); // Inclusive
+    uniform_int_distribution<int> uniformIndivOrBest(-1, POPULATION_SIZE-1);
 
     assert(PARENT_COUNT % 2 == 0); // So we can do nice crossover
-    vector<Individual> parentList(PARENT_COUNT);
+    vector<Vector> parentList(PARENT_COUNT);
 
     for(int iteration=0; iteration<MAX_ITERATIONS; iteration++)
     {
@@ -162,70 +169,63 @@ Vector evolvePopulation(Individual* population, int dimensionCount,
         // Crossover
         for(int parentID=0; parentID<PARENT_COUNT; parentID+=2)
         {
-            crossoverIndividuals(parentList[parentID].position, parentList[parentID+1].position, allocCount, allocations);
+            crossoverIndividuals(parentList[parentID], parentList[parentID+1], allocCount, allocations);
+            // NOTE: These same Vectors will get updated again during mutation, and thats when
+            //       we'll get their new violation/fitness
         }
 
         // Mutation
         for(int parentID=0; parentID<PARENT_COUNT; parentID++)
         {
-            mutateIndividual(parentList[parentID].position, allocCount, allocations);
+            mutateIndividual(parentList[parentID], allocCount, allocations);
+
+            parentList[parentID].processPositionUpdate(allocCount, allocations);
         }
 
         // Child selection
         for(int parentID=0; parentID<PARENT_COUNT; parentID++)
         {
-            float maxFitness = population[0].fitness;
-            int maxFitnessIndex = 0;
+            int worstIndex = 0;
             for(int i=1; i<POPULATION_SIZE; i++)
             {
-                if(population[i].fitness > maxFitness)
+                if(isPositionBetter(population[worstIndex], population[i], allocCount, allocations))
                 {
-                    maxFitness = population[i].fitness;
-                    maxFitnessIndex = i;
+                    worstIndex = i;
                 }
             }
-            int replacedIndiv = uniformIndiv(rng);
-            population[maxFitnessIndex] = parentList[parentID];
+            population[worstIndex] = parentList[parentID];
         }
 
         // Evaluation
         for(int indivID=0; indivID<POPULATION_SIZE; indivID++)
         {
-            if(isFeasible(population[indivID].position, allocCount, allocations))
+            if(isPositionBetter(population[indivID], bestIndividual, allocCount, allocations))
             {
-                float fitness = computeFitness(population[indivID].position, allocCount, allocations);
-                population[indivID].fitness = fitness;
-                if(fitness < bestIndividual.fitness)
-                {
-                    bestIndividual = population[indivID];
-                }
-            }
-            else
-            {
-                population[indivID].fitness = FLT_MAX;
+                bestIndividual = population[indivID];
             }
         }
-        plotLog.log("%d %.2f\n", iteration, bestIndividual.fitness);
+        if(bestIndividual.fitness != FLT_MAX)
+            plotLog.log("%d %.2f\n", iteration, bestIndividual.fitness);
     }
 
-    return bestIndividual.position;
+    return bestIndividual;
 }
 
 Vector computeAllocations(int allocationCount, AllocationPointer* allocations)
 {
     // Create the swarm
     int dimensionCount = allocationCount * DIMENSIONS_PER_ALLOCATION;
-    Individual* population = new Individual[POPULATION_SIZE];
+    Vector* population = new Vector[POPULATION_SIZE];
     for(int i=0; i<POPULATION_SIZE; i++)
     {
-        population[i].position = Vector(dimensionCount);
+        population[i] = Vector(dimensionCount);
         // NOTE: We initialize the values here just so that our initial solution is feasible
         for(int allocID=0; allocID<allocationCount; allocID++)
         {
             float minStartDate = allocations[allocID].getMinStartDate();
-            allocations[allocID].setStartDate(population[i].position, minStartDate);
-            allocations[allocID].setTenor(population[i].position, 0.0f);
-            allocations[allocID].setAmount(population[i].position, 0.0f);
+            allocations[allocID].setStartDate(population[i], minStartDate);
+            allocations[allocID].setTenor(population[i], 0.0f);
+            allocations[allocID].setAmount(population[i], 0.0f);
         }
     }
 
@@ -238,19 +238,12 @@ Vector computeAllocations(int allocationCount, AllocationPointer* allocations)
         {
             for(int allocID=0; allocID<allocationCount; allocID++)
             {
-                initializeAllocation(allocations[allocID], population[i].position, rng);
-                allocations[allocID].setAmount(population[i].position, 0); // TODO: See the TODO in pso.cpp
+                initializeAllocation(allocations[allocID], population[i], rng);
             }
         } while((retries++ < 5) &&
-                !isFeasible(population[i].position, allocationCount, allocations));
+                !isFeasible(population[i], allocationCount, allocations));
 
-        if(isFeasible(population[i].position, allocationCount, allocations))
-            population[i].fitness = computeFitness(population[i].position, allocationCount, allocations);
-        else
-            population[i].fitness = FLT_MAX;
-
-        if(retries > 1)
-            printf("Alloc %d took %d retries to initialize\n", i, retries);
+        population[i].processPositionUpdate(allocationCount, allocations);
     }
     printf("Initialization complete\n");
 
