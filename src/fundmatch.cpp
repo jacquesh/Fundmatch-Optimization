@@ -24,12 +24,12 @@ static const int AMOUNT_OFFSET = 2;
 InputData g_input;
 
 Vector::Vector()
-    : dimensions(0), coords(nullptr)
+    : dimensions(0), coords(nullptr), constraintViolation(FLT_MAX), fitness(FLT_MAX)
 {
 }
 
 Vector::Vector(int dimCount)
-    : dimensions(dimCount)
+    : dimensions(dimCount), constraintViolation(FLT_MAX), fitness(FLT_MAX)
 {
     if(this->dimensions > 0)
         this->coords = new float[this->dimensions];
@@ -38,7 +38,8 @@ Vector::Vector(int dimCount)
 }
 
 Vector::Vector(const Vector& other)
-    : dimensions(other.dimensions)
+    : dimensions(other.dimensions), constraintViolation(other.constraintViolation),
+        fitness(other.fitness)
 {
     if(this->dimensions > 0)
     {
@@ -57,6 +58,15 @@ Vector::~Vector()
     {
         delete[] this->coords;
     }
+}
+
+void Vector::processPositionUpdate(int allocCount, AllocationPointer* allocations)
+{
+    this->constraintViolation = measureConstraintViolation(*this, allocCount, allocations);
+    if(this->constraintViolation == 0.0f)
+        this->fitness = computeFitness(*this, allocCount, allocations);
+    else
+        this->fitness = FLT_MAX;
 }
 
 Vector& Vector::operator =(const Vector& other)
@@ -296,8 +306,9 @@ float maxAllocationAmount(Vector& position, int allocationCount, AllocationPoint
     return max(0.0f, result);
 }
 
-bool isFeasible(Vector& position, int allocationCount, AllocationPointer* allocations)
+float measureConstraintViolation(Vector& position, int allocationCount, AllocationPointer* allocations)
 {
+    float result = 0.0f;
     for(int allocID=0; allocID<allocationCount; allocID++)
     {
         AllocationPointer& alloc = allocations[allocID];
@@ -325,12 +336,12 @@ bool isFeasible(Vector& position, int allocationCount, AllocationPointer* alloca
             float sourceStart = (float)source.startDate;
             float sourceEnd = (float)(source.startDate + source.tenor);
             float sourceAmount = (float)source.amount;
-            if((allocStart < sourceStart) || (allocStart > sourceEnd))
-                return false;
-            if(allocEnd > sourceEnd)
-                return false;
+            if(allocStart < sourceStart)
+                result += (sourceStart - allocStart) * allocAmount;
+            if((allocStart > sourceEnd) || (allocEnd > sourceEnd))
+                result += (allocEnd - sourceEnd) * allocAmount;
             if(allocAmount > sourceAmount)
-                return false;
+                result += allocTenor * (allocAmount*sourceAmount);
         }
         else
         {
@@ -339,7 +350,7 @@ bool isFeasible(Vector& position, int allocationCount, AllocationPointer* alloca
             // TODO: Other properties, if we have any
             float balanceAmount = (float)balancePool.amount;
             if(allocAmount > balanceAmount)
-                return false;
+                result += allocTenor * (allocAmount - balanceAmount);
         }
     }
 
@@ -429,26 +440,60 @@ bool isFeasible(Vector& position, int allocationCount, AllocationPointer* alloca
             if(alloc->getTenor(position) < 0.0f)
                 continue;
             activeAllocations.push_back(alloc);
+            float allocTenor = alloc->getTenor(position);
             float allocAmount = alloc->getAmount(position);
             if(alloc->sourceIndex >= 0)
             {
                 sourceValueRemaining[alloc->sourceIndex] -= allocAmount;
                 if(sourceValueRemaining[alloc->sourceIndex] < 0.0f)
-                    return false;
+                    result += allocTenor * (-1.0f * sourceValueRemaining[alloc->sourceIndex]);
             }
             else
             {
                 assert(alloc->balancePoolIndex >= 0);
                 balancePoolValueRemaining[alloc->balancePoolIndex] -= allocAmount;
                 if(balancePoolValueRemaining[alloc->balancePoolIndex] < 0.0f)
-                    return false;
+                    result += allocTenor * (-1.0f * balancePoolValueRemaining[alloc->balancePoolIndex]);
             }
         }
     }
     delete[] balancePoolValueRemaining;
     delete[] sourceValueRemaining;
 
-    return true;
+    assert(result >= 0.0f);
+    return result;
+}
+
+bool isPositionBetter(Vector& newPosition, Vector& testPosition,
+                      int allocationCount, AllocationPointer* allocations)
+{
+    float newViolation = measureConstraintViolation(newPosition, allocationCount, allocations);
+    float testViolation = measureConstraintViolation(testPosition, allocationCount, allocations);
+    assert(newViolation >= 0.0f);
+    assert(testViolation >= 0.0f);
+
+    if((newViolation == 0.0f) && (testViolation == 0.0f))
+    {
+        float newFitness = computeFitness(newPosition, allocationCount, allocations);
+        float testFitness = computeFitness(testPosition, allocationCount, allocations);
+        if(newFitness < testFitness)
+            return true;
+        return false;
+    }
+    else
+    {
+        // NOTE: If at least one of them is not 0, then it's positive, and we either want the one
+        //       that is feasible (and therefore less than the non-feasible one), or we want the
+        //       one that is closest to being feasible (and therefore has the smaller violation)
+        //
+        return (newViolation < testViolation);
+    }
+}
+
+bool isFeasible(Vector& position, int allocationCount, AllocationPointer* allocations)
+{
+    float violation = measureConstraintViolation(position, allocationCount, allocations);
+    return (violation == 0.0f);
 }
 
 float computeFitness(Vector& position, int allocationCount, AllocationPointer* allocations)

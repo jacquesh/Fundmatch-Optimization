@@ -46,15 +46,21 @@ struct RequirementInfo
     TaxClass taxClass;
 };
 
+struct AllocationPointer; // Forward-declare so we can use AllocationPointer*'s
 struct Vector
 {
     int dimensions;
     float* coords;
 
+    float constraintViolation;
+    float fitness;
+
     Vector();
-    Vector(int dimCount);
+    explicit Vector(int dimCount);
     Vector(const Vector& other);
     ~Vector();
+
+    void processPositionUpdate(int allocCount, AllocationPointer* allocations);
 
     Vector& operator =(const Vector& other);
     float& operator [](int index) const;
@@ -122,6 +128,9 @@ Vector computeAllocations(int allocationCount, AllocationPointer* allocations);
 
 // Returns true iff the given position vector and allocation set is feasible
 bool isFeasible(Vector& position, int allocationCount, AllocationPointer* allocations);
+
+bool isPositionBetter(Vector& newPosition, Vector& testPosition, int allocationCount, AllocationPointer* allocations);
+float measureConstraintViolation(Vector& position, int allocationCount, AllocationPointer* allocations);
 
 // Returns the fitness (total interest cost) of the given position vector and allocation set
 float computeFitness(Vector& position, int allocationCount, AllocationPointer* allocations);
