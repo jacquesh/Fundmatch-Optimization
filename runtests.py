@@ -1,4 +1,5 @@
 from subprocess import check_output
+from os.path import isfile
 import argparse
 import re
 
@@ -9,11 +10,10 @@ if __name__ == "__main__":
     parser.add_argument("-m", "--method", default=["heuristic"], type=str, nargs="*")
     args = parser.parse_args()
 
-    possible_methods = ("heuristic", "pso", "ga")
     iterations = args.iterations
 
     for method in args.method:
-        if method not in possible_methods:
+        if not isfile("./build/%s.exe" % method):
             print("Method %s unrecognized, ignoring", method)
             continue
 
