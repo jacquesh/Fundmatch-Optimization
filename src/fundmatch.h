@@ -100,28 +100,11 @@ struct InputData
 
 extern InputData g_input;
 
-// Allocates an array of SourceInfo, and puts it into input.sources.
-// Returns true iff the function succeeded, if false is returned then input will not be modified.
-bool loadSourceData(const char* inputFilename, InputData& input);
-
-// Allocates an array of BalancePoolInfo, and puts it into input.balancePools.
-// Returns true iff the function succeeded, if false is returned then input will not be modified.
-bool loadBalancePoolData(const char* inputFilename, InputData& input);
-
-// Allocates an array of RequirementInfo and puts it into input.requirements
-// Returns true iff the function succeeded, if false is returned then input will not be modified.
-bool loadRequirementData(const char* inputFilename, InputData& input);
-
-Vector loadAllocationData(const char* inputFilename, std::vector<AllocationPointer>& allocations);
-
 // Gives valid initial values to the given position vector, using the given random generators
 void initializeAllocation(AllocationPointer& alloc, Vector& position, std::mt19937& rng);
 
 // Returns the maximum sensible (and feasible) number of months to allocate from source to req
 int maxAllocationTenor(SourceInfo& source, RequirementInfo& req);
-
-// Returns the maximum feasible amount that be loaned as part of the given allocation
-float maxAllocationAmount(Vector& position, int allocationCount, AllocationPointer* allocations, int allocID);
 
 // Returns a Vector containing the final best solution for the parameters to be optimized
 Vector computeAllocations(int allocationCount, AllocationPointer* allocations);
@@ -134,10 +117,5 @@ float measureConstraintViolation(Vector& position, int allocationCount, Allocati
 
 // Returns the fitness (total interest cost) of the given position vector and allocation set
 float computeFitness(Vector& position, int allocationCount, AllocationPointer* allocations);
-
-// Serialize the sources, requirements and allocations into a JSON string and writes it to file
-// Returns the number of non-empty requirements (>0 tenor and amount) that were written
-int writeOutputData(InputData input, int allocCount, AllocationPointer* allocations,
-                     Vector solution, const char* outFilename);
 
 #endif

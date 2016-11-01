@@ -1,10 +1,10 @@
 @echo off
 
-set CompileFlags= -nologo -Zi -GR- -Gm- -EHsc- -W4 -I../include -I../src -wd4100 -wd4189 -D_CRT_SECURE_NO_WARNINGS -O2
+set CompileFlags= -nologo -Zi -GR- -Gm- -EHsc- -W4 -I../include -I../src -wd4100 -wd4189 -D_CRT_SECURE_NO_WARNINGS -O2 -Zo
 set LinkFlags= -INCREMENTAL:NO
 
-set HarnessSrcFiles=..\src\main.cpp ..\src\fundmatch.cpp ..\src\platform.cpp ..\src\logging.cpp ..\src\Jzon.cpp
-set HarnessObjFiles=main.obj fundmatch.obj platform.obj logging.obj Jzon.obj
+set HarnessSrcFiles=..\src\main.cpp ..\src\fundmatch.cpp ..\src\dataio.cpp ..\src\platform.cpp ..\src\logging.cpp ..\src\Jzon.cpp
+set HarnessObjFiles=main.obj fundmatch.obj dataio.obj platform.obj logging.obj Jzon.obj
 
 
 IF NOT EXIST build mkdir build

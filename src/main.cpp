@@ -5,6 +5,7 @@
 
 #include "fundmatch.h"
 #include "platform.h"
+#include "dataio.h"
 
 using namespace std;
 
