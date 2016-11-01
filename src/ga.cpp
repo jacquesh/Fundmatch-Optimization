@@ -15,10 +15,12 @@
 using namespace std;
 
 static FileLogger plotLog = FileLogger("ga_fitness.dat");
+//static minstd_rand randDevice(3);
+static random_device randDevice;
+
 
 void mutateIndividual(Vector& individual, int allocCount, AllocationPointer* allocations)
 {
-    static random_device randDevice;
     static mt19937 rng(randDevice());
     uniform_real_distribution<float> uniformf(0.0f, 1.0f);
 
@@ -74,7 +76,6 @@ static void crossoverIndividualAllocation(Vector& indivA, Vector& indivB, Alloca
 void crossoverIndividuals(Vector& individualA, Vector& individualB,
                           int allocationCount, AllocationPointer* allocations)
 {
-    static random_device randDevice;
     static mt19937 rng(randDevice());
 #if 0
     // 1-point crossover
@@ -132,7 +133,6 @@ Vector evolvePopulation(Individual* population, int dimensionCount,
     }
     plotLog.log("%d %.2f\n", -1, bestIndividual.fitness);
 
-    random_device randDevice;
     mt19937 rng(randDevice());
     uniform_real_distribution<float> uniformf(0.0f, 1.0f);
     uniform_int_distribution<int> uniformIndiv(0, POPULATION_SIZE-1); // Inclusive
@@ -227,7 +227,6 @@ Vector computeAllocations(int allocationCount, AllocationPointer* allocations)
     }
 
     // Initialize the swarm
-    random_device randDevice;
     mt19937 rng(randDevice());
     for(int i=0; i<POPULATION_SIZE; i++)
     {
