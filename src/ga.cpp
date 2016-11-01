@@ -81,18 +81,7 @@ void crossoverIndividuals(Vector& individualA, Vector& individualB,
     // 1-point crossover
     uniform_int_distribution<int> randomIndividual(0, allocationCount-1); // Endpoints are inclusive
     AllocationPointer& alloc = allocations[randomIndividual(rng)];
-
-    float tempStartDate = alloc.getStartDate(individualA);
-    float tempTenor = alloc.getTenor(individualA);
-    float tempAmount = alloc.getAmount(individualA);
-
-    alloc.setStartDate(individualA, alloc.getStartDate(individualB));
-    alloc.setTenor(individualA, alloc.getTenor(individualB));
-    alloc.setAmount(individualA, alloc.getAmount(individualB));
-
-    alloc.setStartDate(individualB, tempStartDate);
-    alloc.setTenor(individualB, tempTenor);
-    alloc.setAmount(individualB, tempAmount);
+    crossoverIndividualAllocation(individualA, individualB, alloc);
 #endif
 
 #if 0
@@ -108,6 +97,7 @@ void crossoverIndividuals(Vector& individualA, Vector& individualB,
     }
 #endif
 
+#if 1
     // Requirement crossover
     uniform_int_distribution<int> randomReq(0, (int)g_input.requirements.size()-1);
     int crossedReq = randomReq(rng);
@@ -119,7 +109,7 @@ void crossoverIndividuals(Vector& individualA, Vector& individualB,
 
         crossoverIndividualAllocation(individualA, individualB, alloc);
     }
-
+#endif
 }
 
 Vector evolvePopulation(Individual* population, int dimensionCount,
