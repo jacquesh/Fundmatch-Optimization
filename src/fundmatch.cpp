@@ -71,16 +71,9 @@ Vector& Vector::operator =(const Vector& other)
         if(this->coords)
             delete[] this->coords;
         this->coords = new float[other.dimensions];
-
-        int copySize = min(this->dimensions, other.dimensions) * sizeof(float);
-        memcpy(this->coords, other.coords, copySize);
-
         this->dimensions = other.dimensions;
     }
-    else
-    {
-        memcpy(this->coords, other.coords, this->dimensions*sizeof(float));
-    }
+    memcpy(this->coords, other.coords, this->dimensions*sizeof(float));
 
     return *this;
 }
