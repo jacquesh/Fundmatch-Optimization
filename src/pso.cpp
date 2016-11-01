@@ -5,6 +5,7 @@
 #include <float.h>
 
 #include <random>
+#include <algorithm>
 
 #include "pso.h"
 #include "fundmatch.h"
@@ -32,23 +33,16 @@ Vector optimizeSwarm(Particle* swarm, int dimensionCount,
     uniform_real_distribution<float> uniformf(0.0f, 1.0f);
 
     // Compute the best position on the initial swarm positions
-    int bestFitnessIndex = -1;
-    float bestFitness = FLT_MAX;
-    for(int particleIndex=0; particleIndex<SWARM_SIZE; particleIndex++)
+    int bestFitnessIndex = 0;
+    for(int particleIndex=1; particleIndex<SWARM_SIZE; particleIndex++)
     {
-        if(!isFeasible(swarm[particleIndex].position, allocCount, allocations))
-            continue;
-
-        float fitness = computeFitness(swarm[particleIndex].position, allocCount, allocations);
-        if(fitness < bestFitness)
+        if(isPositionBetter(swarm[particleIndex].position, swarm[bestFitnessIndex].position, allocCount, allocations))
         {
-            bestFitness = fitness;
             bestFitnessIndex = particleIndex;
         }
     }
-    assert(bestFitnessIndex >= 0);
     Vector bestLoc = swarm[bestFitnessIndex].position;
-    plotLog.log("%d %.2f\n", -1, bestFitness);
+    plotLog.log("%d %.2f\n", -1, bestLoc.fitness);
 
     for(int iteration=0; iteration<MAX_ITERATIONS; iteration++)
     {
@@ -57,40 +51,32 @@ Vector optimizeSwarm(Particle* swarm, int dimensionCount,
         //       can compare with the correct best at the start of the current iteration
         for(int particleIndex=0; particleIndex<SWARM_SIZE; particleIndex++)
         {
-            if(!isFeasible(swarm[particleIndex].position, allocCount, allocations))
-                continue;
-
-            float fitness = computeFitness(swarm[particleIndex].position, allocCount, allocations);
-            if(fitness < bestFitness)
+            Particle& particle = swarm[particleIndex];
+            if(isPositionBetter(particle.position, bestLoc, allocCount, allocations))
             {
-                bestFitness = fitness;
-                bestLoc = swarm[particleIndex].position;
+                bestLoc = particle.position;
             }
-
-            if(fitness < swarm[particleIndex].bestSeenFitness)
+            if(isPositionBetter(particle.position, particle.bestSeenLoc, allocCount, allocations))
             {
-                swarm[particleIndex].bestSeenFitness = fitness;
-                swarm[particleIndex].bestSeenLoc = swarm[particleIndex].position;
+                particle.bestSeenLoc = particle.position;
             }
         }
-        plotLog.log("%d %.2f\n", iteration, bestFitness);
+        plotLog.log("%d %.2f\n", iteration, bestLoc.fitness);
 
         // Update particle velocities based on known best positions
         for(int particleIndex=0; particleIndex<SWARM_SIZE; particleIndex++)
         {
-            Particle& currentParticle = swarm[particleIndex];
-            Vector localBestLoc = currentParticle.bestSeenLoc;
+            Particle& particle = swarm[particleIndex];
             Vector globalBestLoc = bestLoc;
 
-            Vector neighbourBestLoc = currentParticle.neighbours[0]->bestSeenLoc;
-            float neighbourBestFitness = currentParticle.neighbours[0]->bestSeenFitness;
+            // TODO: Just use a pointer here, we're doing a boatload of copying as it stands
+            Vector neighbourBestLoc = particle.neighbours[0]->bestSeenLoc;
             for(int neighbourIndex=1; neighbourIndex<NEIGHBOUR_COUNT; neighbourIndex++)
             {
-                Particle* currentNeighbour = currentParticle.neighbours[neighbourIndex];
-                if(currentNeighbour->bestSeenFitness < neighbourBestFitness)
+                Particle* neighbour = particle.neighbours[neighbourIndex];
+                if(isPositionBetter(neighbour->bestSeenLoc, neighbourBestLoc, allocCount, allocations))
                 {
-                    neighbourBestFitness = currentNeighbour->bestSeenFitness;
-                    neighbourBestLoc = currentNeighbour->bestSeenLoc;;
+                    neighbourBestLoc = neighbour->bestSeenLoc;
                 }
             }
 
@@ -99,10 +85,13 @@ Vector optimizeSwarm(Particle* swarm, int dimensionCount,
                 float selfFactor = SELF_BEST_FACTOR * uniformf(rng);
                 float neighbourFactor = NEIGHBOUR_BEST_FACTOR * uniformf(rng);
 
-                currentParticle.velocity.coords[dim] = CONSTRICTION_COEFFICIENT * (
-                    currentParticle.velocity[dim] +
-                    (selfFactor * (localBestLoc[dim] - currentParticle.position[dim])) +
-                    (neighbourFactor * (neighbourBestLoc[dim] - currentParticle.position[dim]))
+                float selfBestOffset = particle.bestSeenLoc[dim] - particle.position[dim];
+                float neighbourBestOffset = neighbourBestLoc[dim] - particle.position[dim];
+
+                particle.velocity.coords[dim] = CONSTRICTION_COEFFICIENT * (
+                    particle.velocity[dim] +
+                    (selfFactor * selfBestOffset) +
+                    (neighbourFactor * neighbourBestOffset)
                     );
             }
         }
@@ -114,6 +103,8 @@ Vector optimizeSwarm(Particle* swarm, int dimensionCount,
             {
                 swarm[particleIndex].position.coords[dim] += swarm[particleIndex].velocity[dim];
             }
+
+            swarm[particleIndex].position.processPositionUpdate(allocCount, allocations);
         }
     }
     return bestLoc;
@@ -149,19 +140,11 @@ Vector computeAllocations(int allocationCount, AllocationPointer* allocations)
             {
                 initializeAllocation(allocations[allocID], swarm[i].position, rng);
                 //allocations[allocID].setAmount(swarm[i].position, 0); // TODO: This prevents us from getting 0 valid particles, would like to find a better solution though
-                // NOTE: The reason we're getting no valid particles is that checking individual
-                //       allocations independently is fine, but when you consider them all at once
-                //       it isn't valid because you over-allocate from some source.
-                //
-                //       It might be a good idea to change the isFeasible version with non-default
-                //       checkAlloc to check all allocations up-to-and-including checkAlloc instead
-                //       of just checkAlloc.
             }
         } while((retries++ < 5) &&
                 !isFeasible(swarm[i].position, allocationCount, allocations));
 
-        if(retries > 1)
-            printf("Particle %d took %d retries to initialize\n", i, retries);
+        swarm[i].position.processPositionUpdate(allocationCount, allocations);
 
         // Initialize allocation velocity
         for(int allocID=0; allocID<allocationCount; allocID++)
@@ -180,7 +163,6 @@ Vector computeAllocations(int allocationCount, AllocationPointer* allocations)
         }
 
         swarm[i].bestSeenLoc = swarm[i].position;
-        swarm[i].bestSeenFitness = computeFitness(swarm[i].position, allocationCount, allocations);
 
         swarm[i].neighbours[0] = &swarm[i];
         for(int neighbourIndex=1; neighbourIndex<NEIGHBOUR_COUNT; neighbourIndex++)

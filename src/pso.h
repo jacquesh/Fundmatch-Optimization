@@ -20,7 +20,6 @@ struct Particle
     Vector velocity;
 
     Vector bestSeenLoc;
-    float bestSeenFitness;
 
     Particle* neighbours[NEIGHBOUR_COUNT];
 
