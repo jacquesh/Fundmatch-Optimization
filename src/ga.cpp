@@ -161,13 +161,13 @@ Vector evolvePopulation(Vector* population, int dimensionCount,
     uniform_int_distribution<int> uniformIndiv(0, POPULATION_SIZE-1); // Inclusive
     uniform_int_distribution<int> uniformIndivOrBest(-1, POPULATION_SIZE-1);
 
-    assert(PARENT_COUNT % 2 == 0); // So we can do nice crossover
-    vector<Vector> parentList(PARENT_COUNT);
+    assert(POPULATION_SIZE % 2 == 0); // So we can do nice crossover
+    vector<Vector> parentList(POPULATION_SIZE);
 
     for(int iteration=0; iteration<MAX_ITERATIONS; iteration++)
     {
         // Parent Selection
-        for(int parentID=0; parentID<PARENT_COUNT; parentID++)
+        for(int parentID=0; parentID<POPULATION_SIZE; parentID++)
         {
             Vector* tourneyWinner = nullptr;
             for(int i=0; i<TOURNAMENT_SIZE; i++)
@@ -194,7 +194,7 @@ Vector evolvePopulation(Vector* population, int dimensionCount,
         }
 
         // Crossover
-        for(int parentID=0; parentID<PARENT_COUNT; parentID+=2)
+        for(int parentID=0; parentID<POPULATION_SIZE; parentID+=2)
         {
             crossoverIndividuals(parentList[parentID], parentList[parentID+1], allocCount, allocations);
             // NOTE: These same Vectors will get updated again during mutation, and thats when
@@ -202,7 +202,7 @@ Vector evolvePopulation(Vector* population, int dimensionCount,
         }
 
         // Mutation
-        for(int parentID=0; parentID<PARENT_COUNT; parentID++)
+        for(int parentID=0; parentID<POPULATION_SIZE; parentID++)
         {
             mutateIndividual(parentList[parentID], allocCount, allocations);
 
@@ -210,17 +210,9 @@ Vector evolvePopulation(Vector* population, int dimensionCount,
         }
 
         // Child selection
-        for(int parentID=0; parentID<PARENT_COUNT; parentID++)
+        for(int i=0; i<POPULATION_SIZE; i++)
         {
-            int worstIndex = 0;
-            for(int i=1; i<POPULATION_SIZE; i++)
-            {
-                if(isPositionBetter(population[worstIndex], population[i], allocCount, allocations))
-                {
-                    worstIndex = i;
-                }
-            }
-            population[worstIndex] = parentList[parentID];
+            population[i] = parentList[i];
         }
 
         // Evaluation
