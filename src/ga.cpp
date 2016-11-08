@@ -77,6 +77,33 @@ void crossoverIndividuals(Vector& individualA, Vector& individualB,
                           int allocationCount, AllocationPointer* allocations)
 {
     static mt19937 rng(randDevice());
+
+#if 1
+    // Standard crossover (swap one side of a single point)
+    uniform_int_distribution<int> randomAllocation(0, allocationCount-1); // Endpoints are inclusive
+    int middleAllocation = randomAllocation(rng);
+    for(int allocID=0; allocID<middleAllocation; allocID++)
+    {
+        AllocationPointer& alloc = allocations[allocID];
+        crossoverIndividualAllocation(individualA, individualB, alloc);
+    }
+#endif
+
+#if 0
+    // Interval crossover
+    uniform_int_distribution<int> randomAllocation(0, allocationCount-1);
+    int fromAlloc = randomAllocation(rng);
+    int toAlloc = randomAllocation(rng);
+    int currentAlloc = fromAlloc;
+    while(currentAlloc != toAlloc)
+    {
+        AllocationPointer& alloc = allocations[currentAlloc];
+        crossoverIndividualAllocation(individualA, individualB, alloc);
+
+        currentAlloc = (currentAlloc+1)%allocationCount;
+    }
+#endif
+
 #if 0
     // 1-point crossover
     uniform_int_distribution<int> randomIndividual(0, allocationCount-1); // Endpoints are inclusive
