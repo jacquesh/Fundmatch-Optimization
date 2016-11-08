@@ -74,6 +74,8 @@ Vector& Vector::operator =(const Vector& other)
         this->dimensions = other.dimensions;
     }
     memcpy(this->coords, other.coords, this->dimensions*sizeof(float));
+    this->fitness = other.fitness;
+    this->constraintViolation = other.constraintViolation;
 
     return *this;
 }
