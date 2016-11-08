@@ -28,6 +28,7 @@ Particle::Particle(int dimCount)
 Vector optimizeSwarm(Particle* swarm, int dimensionCount,
                   int allocCount, AllocationPointer* allocations)
 {
+    // TODO: Just have 1 global one of these
     random_device randDevice;
     mt19937 rng(randDevice());
     uniform_real_distribution<float> uniformf(0.0f, 1.0f);
@@ -154,8 +155,8 @@ Vector computeAllocations(int allocationCount, AllocationPointer* allocations)
             int allocReqTenor = g_input.requirements[requirementID].tenor;
             int allocReqAmount = g_input.requirements[requirementID].amount;
 
-            float startDateVelocity = centredUniformf(rng) * 0.5f * (float)allocReqTenor;
-            float tenorVelocity = centredUniformf(rng) * 0.5f * (float)allocReqTenor;
+            float startDateVelocity = centredUniformf(rng) * (float)allocReqTenor;
+            float tenorVelocity = centredUniformf(rng) * (float)allocReqTenor;
             float amountVelocity = centredUniformf(rng) * (float)allocReqAmount;
             allocations[allocID].setStartDate(swarm[i].velocity, startDateVelocity);
             allocations[allocID].setTenor(swarm[i].velocity, tenorVelocity);
