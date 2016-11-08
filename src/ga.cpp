@@ -106,8 +106,8 @@ void crossoverIndividuals(Vector& individualA, Vector& individualB,
 
 #if 0
     // 1-point crossover
-    uniform_int_distribution<int> randomIndividual(0, allocationCount-1); // Endpoints are inclusive
-    AllocationPointer& alloc = allocations[randomIndividual(rng)];
+    uniform_int_distribution<int> randomAllocation(0, allocationCount-1); // Endpoints are inclusive
+    AllocationPointer& alloc = allocations[randomAllocation(rng)];
     crossoverIndividualAllocation(individualA, individualB, alloc);
 #endif
 
@@ -124,7 +124,7 @@ void crossoverIndividuals(Vector& individualA, Vector& individualB,
     }
 #endif
 
-#if 1
+#if 0
     // Requirement crossover
     uniform_int_distribution<int> randomReq(0, (int)g_input.requirements.size()-1);
     int crossedReq = randomReq(rng);
