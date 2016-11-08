@@ -1,8 +1,10 @@
 .vs/
 build/
 data/
+gnuplot-palettes/
 *.swp
 *.swo
 *.json
 *.dat
 *.gp
+*.png
