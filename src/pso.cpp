@@ -140,7 +140,6 @@ Vector computeAllocations(int allocationCount, AllocationPointer* allocations)
             for(int allocID=0; allocID<allocationCount; allocID++)
             {
                 initializeAllocation(allocations[allocID], swarm[i].position, rng);
-                //allocations[allocID].setAmount(swarm[i].position, 0); // TODO: This prevents us from getting 0 valid particles, would like to find a better solution though
             }
         } while((retries++ < 5) &&
                 !isFeasible(swarm[i].position, allocationCount, allocations));
