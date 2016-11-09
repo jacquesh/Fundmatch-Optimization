@@ -259,7 +259,6 @@ float measureConstraintViolation(Vector& position, int allocationCount, Allocati
         {
             assert(alloc.balancePoolIndex >= 0);
             BalancePoolInfo& balancePool = g_input.balancePools[alloc.balancePoolIndex];
-            // TODO: Other properties, if we have any
             float balanceAmount = (float)balancePool.amount;
             if(allocAmount > balanceAmount)
                 result += allocTenor * (allocAmount - balanceAmount);
@@ -267,9 +266,9 @@ float measureConstraintViolation(Vector& position, int allocationCount, Allocati
     }
 
     // Check that no sources ever get over-used (IE 2 allocations with value 300 from a source of 500 at the same time)
-    vector<AllocationPointer*> allocationsByStart;
+    vector<AllocationPointer*> allocationsByStart(allocationCount);
     for(int i=0; i<allocationCount; i++)
-        allocationsByStart.push_back(&allocations[i]);
+        allocationsByStart[i] = &allocations[i];
     vector<AllocationPointer*> allocationsByEnd(allocationsByStart);
 
     auto allocStartDateComparison = [&position](AllocationPointer* a, AllocationPointer* b)
