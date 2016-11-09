@@ -6,8 +6,11 @@
 #include <algorithm>
 
 #include "fundmatch.h"
+#include "logging.h"
 
 using namespace std;
+
+static FileLogger plotLog = FileLogger("heuristic_fitness.dat");
 
 Vector computeAllocations(int allocationCount, AllocationPointer* allocations)
 {
@@ -158,6 +161,10 @@ Vector computeAllocations(int allocationCount, AllocationPointer* allocations)
             alloc.setAmount(solution, 0);
         }
     }
+
+    assert(isFeasible(solution, allocationCount, allocations));
+    float fitness = computeFitness(solution, allocationCount, allocations);
+    plotLog.log("%.2f", fitness);
 
     delete[] requirementSources;
     delete[] sourcesUsed;
