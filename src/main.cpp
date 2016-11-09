@@ -128,8 +128,9 @@ int main(int argc, char** argv)
 
     printf("Computing values for %d allocations...\n", validAllocationCount);
     Vector solution = computeAllocations(validAllocationCount, allocations);
-    assert(isFeasible(solution, validAllocationCount, allocations));
-    float solutionFitness = computeFitness(solution, validAllocationCount, allocations);
+    float solutionFitness = -1.0f;
+    if(isFeasible(solution, validAllocationCount, allocations))
+        solutionFitness = computeFitness(solution, validAllocationCount, allocations);
 
     vector<AllocationPointer> manAllocs;
     char allocationFilename[MAX_FILEPATH_LENGTH];
