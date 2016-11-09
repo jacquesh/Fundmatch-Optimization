@@ -45,14 +45,14 @@ void mutateIndividual(Vector& individual, int allocCount, AllocationPointer* all
         {
             // Tenor
             float maxTenor = alloc.getMaxTenor(individual);
-            float newTenor = uniformf(rng)*maxTenor;
+            float newTenor = round(uniformf(rng)*maxTenor);
             alloc.setTenor(individual, newTenor);
         }
         else
         {
             // Amount
             float maxAmount = alloc.getMaxAmount(individual);
-            float newAmount = uniformf(rng)*maxAmount;
+            float newAmount = round(uniformf(rng)*maxAmount);
             alloc.setAmount(individual, newAmount);
         }
     }
