@@ -29,6 +29,8 @@ private:
 };
 
 #ifdef CSV_READER_IMPLEMENTATION
+#include <string.h>
+
 // TODO: Handle escaped commas (or commas inside quotes, whatever)
 CsvReader::CsvReader() :
     fileHandle(NULL), fieldValues(NULL), fieldValueLengths(0),

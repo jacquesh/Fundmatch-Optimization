@@ -1,0 +1,8 @@
+CompileFlags="-std=c++11 -I ./src -O2"
+HarnessSrcFiles="src/main.cpp src/fundmatch.cpp src/dataio.cpp src/logging.cpp src/Jzon.cpp"
+HarnessObjFiles="main.o fundmatch.o dataio.o logging.o Jzon.o"
+
+g++ -c $CompileFlags $HarnessSrcFiles
+g++ $CompileFlags -o pso src/pso.cpp $HarnessObjFiles
+g++ $CompileFlags -o ga src/ga.cpp $HarnessObjFiles
+g++ $CompileFlags -o heuristic src/heuristic.cpp $HarnessObjFiles

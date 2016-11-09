@@ -9,7 +9,7 @@
 #include "csvreader.h"
 
 #include "fundmatch.h"
-#include "jzon.h"
+#include "Jzon.h"
 
 using namespace std;
 

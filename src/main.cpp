@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
+#include <time.h>
 #include <vector>
 #include <algorithm>
 
 #include "fundmatch.h"
-#include "platform.h"
 #include "dataio.h"
 
 using namespace std;
@@ -13,8 +14,8 @@ const int MAX_FILEPATH_LENGTH = 512;
 
 int main(int argc, char** argv)
 {
-    int64_t clockFrequency = getClockFrequency();
-    int64_t loadStartTime = getClockValue();
+    clock_t loadStartTime = clock();
+    clock_t clockFrequency = CLOCKS_PER_SEC;
 
     const char* dataName = (argc > 1) ? argv[1] : "DS1";
 
@@ -122,7 +123,7 @@ int main(int argc, char** argv)
     sort(g_input.requirementsByEnd.begin(), g_input.requirementsByEnd.end(),
             reqEndDateComparison);
 
-    int64_t loadEndTime = getClockValue();
+    clock_t loadEndTime = clock();
     float loadSeconds = (float)(loadEndTime-loadStartTime)/(float)clockFrequency;
     printf("Input data loaded in %.2fs\n", loadSeconds);
 
@@ -144,7 +145,7 @@ int main(int argc, char** argv)
                 manAllocs.size(), manualFitness);
     }
 
-    int64_t computeEndTime = getClockValue();
+    clock_t computeEndTime = clock();
     float computeSeconds = (float)(computeEndTime - loadEndTime)/(float)clockFrequency;
 
     int generatedAllocs = writeOutputData(g_input, validAllocationCount, allocations,
