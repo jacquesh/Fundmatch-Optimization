@@ -14,6 +14,7 @@
 using namespace std;
 
 static FileLogger plotLog = FileLogger("pso_fitness.dat");
+static random_device randDevice;
 
 Particle::Particle()
     : position(0), velocity(0), bestSeenLoc(0)
@@ -28,8 +29,6 @@ Particle::Particle(int dimCount)
 Vector optimizeSwarm(Particle* swarm, int dimensionCount,
                   int allocCount, AllocationPointer* allocations)
 {
-    // TODO: Just have 1 global one of these
-    random_device randDevice;
     mt19937 rng(randDevice());
     uniform_real_distribution<float> uniformf(0.0f, 1.0f);
 
@@ -128,7 +127,6 @@ Vector computeAllocations(int allocationCount, AllocationPointer* allocations)
     assert(maxReqDate > minReqDate);
 
     // Initialize the swarm
-    random_device randDevice;
     mt19937 rng(randDevice());
     uniform_real_distribution<float> centredUniformf(-1.0f, 1.0f);
     uniform_int_distribution<int> uniformi(0, NEIGHBOUR_COUNT);
