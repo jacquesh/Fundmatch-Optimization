@@ -192,15 +192,15 @@ void initializeAllocation(AllocationPointer& alloc, Vector& position,
     float dateRange = maxStartDate - minStartDate;
     assert(dateRange >= 0.0f);
 
-    float startDate = minStartDate + (uniformf(rng) * dateRange);
+    float startDate = round(minStartDate + (uniformf(rng) * dateRange));
     assert(startDate > 1.0f);
     alloc.setStartDate(position, startDate);
 
     float maxValidStartingTenor = maxStartDate - startDate;
-    float tenor = uniformf(rng) * maxValidStartingTenor;
+    float tenor = round(uniformf(rng) * maxValidStartingTenor);
     alloc.setTenor(position, tenor);
 
-    float amount = 0.5f * uniformf(rng) * maxAmount;
+    float amount = round(uniformf(rng) * maxAmount);
     alloc.setAmount(position, amount);
 }
 
