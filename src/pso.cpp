@@ -145,6 +145,11 @@ Vector computeAllocations(int allocationCount, AllocationPointer* allocations)
         } while((retries++ < 5) &&
                 !isFeasible(swarm[i].position, allocationCount, allocations));
 
+        if(i == 0)
+        {
+            for(int allocID=0; allocID<allocationCount; allocID++)
+                allocations[allocID].setAmount(swarm[0].position, 0.0f);
+        }
         swarm[i].position.processPositionUpdate(allocationCount, allocations);
 
         // Initialize allocation velocity

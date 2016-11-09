@@ -262,6 +262,11 @@ Vector computeAllocations(int allocationCount, AllocationPointer* allocations)
         } while((retries++ < 5) &&
                 !isFeasible(population[i], allocationCount, allocations));
 
+        if(i == 0)
+        {
+            for(int allocID=0; allocID<allocationCount; allocID++)
+                allocations[allocID].setAmount(population[0], 0.0f);
+        }
         population[i].processPositionUpdate(allocationCount, allocations);
     }
     printf("Initialization complete\n");
