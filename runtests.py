@@ -21,7 +21,7 @@ if __name__ == "__main__":
 
     iterations = args.iterations
     for index, method in enumerate(args.method):
-        if not isfile("./build/%s.exe" % method):
+        if not isfile("./build/%s.exe" % method) and not isfile("./build/%s" % method):
             print("Method %s unrecognized, ignoring" % method)
             del args.method[index]
         else:
