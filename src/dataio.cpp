@@ -67,7 +67,7 @@ bool loadSourceData(const char* inputFilename, InputData& input)
 
         int day, month, year;
         sscanf(csvIn.field(2), "%d/%d/%d", &day, &month, &year);
-        newInfo.startDate = year*12 + month;
+        newInfo.startDate = year*12 + (month-1);
 
         newInfo.tenor = atoi(csvIn.field(3));
         newInfo.amount = atoi(csvIn.field(4));
@@ -128,7 +128,7 @@ bool loadRequirementData(const char* inputFilename, InputData& input)
 
         int day, month, year;
         sscanf(csvIn.field(2), "%d/%d/%d", &day, &month, &year);
-        newInfo.startDate = year*12 + month;
+        newInfo.startDate = year*12 + (month-1);
 
         newInfo.tenor = atoi(csvIn.field(3));
         newInfo.amount = atoi(csvIn.field(4));
@@ -166,7 +166,7 @@ Vector loadAllocationData(const char* inputFilename, vector<AllocationPointer>& 
 
         int day, month, year;
         sscanf(csvIn.field(4), "%d/%d/%d", &day, &month, &year);
-        int startDate = year*12 + month;
+        int startDate = year*12 + (month-1);
 
         int tenor = atoi(csvIn.field(5));
         int amount = atoi(csvIn.field(6));
@@ -190,7 +190,7 @@ int writeOutputData(InputData input, int allocCount, AllocationPointer* allocati
     char dateStr[MAX_DATE_STR_LEN];
     for(int sourceID=0; sourceID<input.sources.size(); sourceID++)
     {
-        int month = input.sources[sourceID].startDate % 12;
+        int month = (input.sources[sourceID].startDate % 12)+1;
         int year = input.sources[sourceID].startDate / 12;
         snprintf(dateStr, MAX_DATE_STR_LEN, "01-%02d-%04d", month, year);
 
@@ -206,7 +206,7 @@ int writeOutputData(InputData input, int allocCount, AllocationPointer* allocati
     Jzon::Node reqNodeList = Jzon::array();
     for(int reqID=0; reqID<input.requirements.size(); reqID++)
     {
-        int month = input.requirements[reqID].startDate % 12;
+        int month = (input.requirements[reqID].startDate % 12)+1;
         int year = input.requirements[reqID].startDate / 12;
         snprintf(dateStr, MAX_DATE_STR_LEN, "01-%02d-%04d", month, year);
 
@@ -235,7 +235,7 @@ int writeOutputData(InputData input, int allocCount, AllocationPointer* allocati
         if((tenor <= 0) || (amount <= 0))
             continue;
 
-        int month = startDate % 12;
+        int month = (startDate % 12)+1;
         int year = startDate / 12;
         snprintf(dateStr, MAX_DATE_STR_LEN, "01-%02d-%04d", month, year);
 

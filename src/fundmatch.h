@@ -17,6 +17,8 @@ enum class TaxClass
     CF,
 };
 
+// NOTE: startDate values are stored as integers defined as (12*year) +(month-1)
+//       e.g 01/02/2015 = 2015*12 + 1
 struct SourceInfo
 {
     char* segment;
