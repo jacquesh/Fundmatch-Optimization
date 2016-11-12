@@ -4,7 +4,7 @@ from random import random, randint
 def dateval_to_str(value):
     year = value // 12
     month = (value - (year*12)) + 1
-    result = "01/%d/%d" % (month, year)
+    result = "01/%02d/%04d" % (month, year)
     return result
 
 def generate(output_name, src_count=5, req_count=5, bpl_count=2, duration=24, max_tenor=100000):
@@ -43,7 +43,7 @@ def generate(output_name, src_count=5, req_count=5, bpl_count=2, duration=24, ma
         req_date_str = dateval_to_str(req_date)
         req_tenor = min(max_tenor, randint(1, end_date - req_date))
         req_amount = min_amount + amount_step_size * randint(0, amount_steps)
-        req_file.write("%d,,%s,%d,%d,,,,\n" % (i+1, req_date_str, req_tenor, req_amount))
+        req_file.write("%d,,%s,%d,%d,,,\n" % (i+1, req_date_str, req_tenor, req_amount))
 
     for i in range(bpl_count):
         bpl_amount = 10 * (min_amount + amount_step_size * randint(0, amount_steps))
