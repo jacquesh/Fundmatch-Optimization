@@ -6,5 +6,4 @@ gnuplot-palettes/
 *.swo
 *.json
 *.dat
-*.gp
 *.png
