@@ -144,6 +144,7 @@ bool CsvReader::readNextEntry()
             fieldValues[fieldIndex][fieldCharIndex++] = c;
         }
     }
+    fieldValues[fieldIndex][fieldCharIndex] = 0; // Null-terminate the last field's string
     return true;
 }
 
