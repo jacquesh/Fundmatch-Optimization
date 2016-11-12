@@ -23,7 +23,6 @@ private:
     FILE* fileHandle;
     char** fieldValues;
     int* fieldValueLengths;
-    int currentEntryIndex;
     int _fieldCount;
     int _entryCount;
 };
@@ -34,7 +33,7 @@ private:
 // TODO: Handle escaped commas (or commas inside quotes, whatever)
 CsvReader::CsvReader() :
     fileHandle(NULL), fieldValues(NULL), fieldValueLengths(0),
-    currentEntryIndex(0), _fieldCount(0), _entryCount(0) {}
+    _fieldCount(0), _entryCount(0) {}
 
 CsvReader::~CsvReader()
 {
@@ -118,27 +117,19 @@ bool CsvReader::readNextEntry()
         if(c == '\r')
             continue;
 
-        if((c == ',') || (c == '\n'))
+        if(c == ',')
         {
             fieldValueLengths[fieldIndex] = fieldCharIndex;
             fieldValues[fieldIndex][fieldCharIndex] = 0;
             fieldCharIndex = 0;
-            if(c == ',')
-            {
-                fieldIndex++;
-            }
-            else // c == '\n'
-            {
-                fieldIndex = 0;
-                currentEntryIndex++;
-            }
+            fieldIndex++;
         }
         else
         {
             if(fieldCharIndex == MAX_CSV_FIELD_SIZE)
             {
-                fprintf(stderr, "ERROR: Field string is too long: %s at entry %d\n",
-                        fieldValues[currentEntryIndex], currentEntryIndex);
+                fprintf(stderr, "ERROR: Field string is too long: %s at index %d\n",
+                        fieldValues[fieldIndex], fieldIndex);
                 return false;
             }
             fieldValues[fieldIndex][fieldCharIndex++] = c;
