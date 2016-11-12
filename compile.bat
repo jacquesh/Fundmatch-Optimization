@@ -1,6 +1,6 @@
 @echo off
 
-set CompileFlags= -nologo -Zi -GR- -Gm- -EHsc- -W4 -I../include -I../src -wd4100 -wd4189 -D_CRT_SECURE_NO_WARNINGS -O2 -Zo
+set CompileFlags= -nologo -Zi -GR- -Gm- -EHsc- -W4 -I../include -I../src -wd4100 -wd4189 -D_CRT_SECURE_NO_WARNINGS -DEBUG -O2 -Zo
 set LinkFlags= -INCREMENTAL:NO
 
 set HarnessSrcFiles=..\src\main.cpp ..\src\fundmatch.cpp ..\src\dataio.cpp ..\src\logging.cpp ..\src\Jzon.cpp
@@ -23,4 +23,7 @@ cl %CompileFlags% ..\src\ga.cpp %HarnessObjFiles% -link %LinkFlags%
 
 REM Heuristic
 cl %CompileFlags% ..\src\heuristic.cpp %HarnessObjFiles% -link %LinkFlags%
+
+REM Worst-case
+cl %CompileFlags% ..\src\worstcase.cpp %HarnessObjFiles% -link %LinkFlags%
 popd
