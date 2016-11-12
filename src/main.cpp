@@ -133,16 +133,18 @@ int main(int argc, char** argv)
     if(isFeasible(solution, validAllocationCount, allocations))
         solutionFitness = computeFitness(solution, validAllocationCount, allocations);
 
-    vector<AllocationPointer> manAllocs;
+    vector<AllocationPointer> manAllocVector;
     char allocationFilename[MAX_FILEPATH_LENGTH];
     snprintf(allocationFilename, MAX_FILEPATH_LENGTH, "data/%s_allocations.csv", dataName);
-    Vector manualSolution = loadAllocationData(allocationFilename, manAllocs);
+    Vector manualSolution = loadAllocationData(allocationFilename, manAllocVector);
     if(manualSolution.dimensions > 0)
     {
-        //assert(isFeasible(manualSolution, validAllocationCount, allocations));
-        float manualFitness = computeFitness(manualSolution, (int)manAllocs.size(), &manAllocs[0]);
-        printf("Manual solution has %zd allocations and costs %f\n",
-                manAllocs.size(), manualFitness);
+        int manAllocCount = (int)manAllocVector.size();
+        AllocationPointer* manAllocs = &manAllocVector[0];
+        assert(isFeasible(manualSolution, manAllocCount, manAllocs));
+        float manualFitness = computeFitness(manualSolution, manAllocCount, manAllocs);
+        printf("Manual solution has %d allocations and costs %f\n",
+                manAllocCount, manualFitness);
     }
 
     clock_t computeEndTime = clock();
