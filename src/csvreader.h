@@ -106,10 +106,7 @@ bool CsvReader::readNextEntry()
 {
     int fieldIndex = 0;
     int fieldCharIndex = 0;
-    for(int i=0; i<_fieldCount; i++)
-    {
-        fieldValueLengths[i] = 0;
-    }
+    memset(fieldValueLengths, 0, _fieldCount*sizeof(int));
 
     char c;
     while((c = (char)fgetc(fileHandle)) != '\n')

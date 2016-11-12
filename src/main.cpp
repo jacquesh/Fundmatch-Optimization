@@ -143,7 +143,7 @@ int main(int argc, char** argv)
         AllocationPointer* manAllocs = &manAllocVector[0];
         //assert(isFeasible(manualSolution, manAllocCount, manAllocs));
         float manualFitness = computeFitness(manualSolution, manAllocCount, manAllocs);
-        printf("Manual solution has %d allocations and costs %f\n",
+        printf("Manual solution has %d allocations and costs %.2f\n",
                 manAllocCount, manualFitness);
     }
 

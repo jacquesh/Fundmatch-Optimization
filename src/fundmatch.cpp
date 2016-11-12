@@ -428,9 +428,7 @@ float computeFitness(Vector& position, int allocationCount, AllocationPointer* a
 
     float* requirementValueRemaining = new float[g_input.requirements.size()];
     for(int i=0; i<g_input.requirements.size(); i++)
-    {
         requirementValueRemaining[i] = (float)g_input.requirements[i].amount;
-    }
     bool* requirementActive = new bool[g_input.requirements.size()];
     for(int i=0; i<g_input.requirements.size(); i++)
         requirementActive[i] = false;

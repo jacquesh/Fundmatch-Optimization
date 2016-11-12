@@ -50,10 +50,8 @@ if __name__ == "__main__":
                 output = check_output(["./build/%s" % method, data_set]).decode()
                 endTime = time.time()
                 regexMatch = re.search(r"fitness was (-?\d+\.\d+) from (\d+) allocations", output)
-                fitnessStr = regexMatch.group(1)
-                fitness = float(fitnessStr)
-                allocCountStr = regexMatch.group(2)
-                allocCount = int(allocCountStr)
+                fitness = float(regexMatch.group(1))
+                allocCount = int(regexMatch.group(2))
                 if(fitness > 0):
                     averageFitness += fitness
                     averageAllocations += allocCount

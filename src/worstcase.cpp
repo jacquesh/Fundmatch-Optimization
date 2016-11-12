@@ -11,7 +11,6 @@ using namespace std;
 
 Vector computeAllocations(int allocationCount, AllocationPointer* allocations)
 {
-
     int dimensionCount = allocationCount * DIMENSIONS_PER_ALLOCATION;
     Vector solution(dimensionCount);
     for(int allocIndex=0; allocIndex<allocationCount; allocIndex++)
@@ -26,9 +25,5 @@ Vector computeAllocations(int allocationCount, AllocationPointer* allocations)
         alloc.setTenor(solution, 0.0f);
         alloc.setAmount(solution, 0.0f);
     }
-
-    assert(isFeasible(solution, allocationCount, allocations));
-    float fitness = computeFitness(solution, allocationCount, allocations);
-
     return solution;
 }
