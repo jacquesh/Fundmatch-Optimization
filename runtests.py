@@ -4,6 +4,9 @@ import time
 import argparse
 import re
 
+def avg(lst):
+    return sum(lst)/len(lst)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--iterations", default=3, type=int)
@@ -50,10 +53,9 @@ if __name__ == "__main__":
             f.write(data_set)
         for method in args.method:
             print("Running %d iterations using %s" % (iterations, method))
-            averageFitness = 0
-            averageRuntime = 0
-            averageAllocations = 0
-            validResultCount = 0
+            fitnesses = []
+            runtimes = []
+            allocCounts = []
             for i in range(iterations):
                 startTime = time.time()
                 output = check_output(["./build/%s" % method, data_set]).decode()
@@ -62,23 +64,28 @@ if __name__ == "__main__":
                 fitness = float(regexMatch.group(1))
                 allocCount = int(regexMatch.group(2))
                 if(fitness > 0):
-                    averageFitness += fitness
-                    averageAllocations += allocCount
-                    averageRuntime += endTime-startTime
-                    validResultCount += 1
+                    fitnesses.append(fitness)
+                    runtimes.append(endTime-startTime)
+                    allocCounts.append(allocCount)
                 print("\tIteration %d: %f" % (i, fitness))
-            if(validResultCount > 0):
-                averageFitness /= validResultCount
-                averageAllocations /= validResultCount
-                averageRuntime /= validResultCount
-            else:
-                averageFitness = 0
-                averageAllocations = 0
-                averageRuntime = 0
-            fitness_plot_file.write(" %.2f" % (averageFitness/worstFitness))
-            alloc_count_plot_file.write(" %.2f" % (averageAllocations/req_count))
-            runtime_plot_file.write(" %.2f" % averageRuntime)
-            print("\tAverage fitness: %.2f" % averageFitness)
+
+            minFitness = maxFitness = avgFitness = 0
+            minAllocations = maxAllocations = avgAllocations = 0
+            minRuntime = maxRuntime = avgRuntime = 0
+            if len(fitnesses) > 0:
+                minFitness = min(fitnesses)/worstFitness
+                maxFitness = max(fitnesses)/worstFitness
+                avgFitness = avg(fitnesses)/worstFitness
+                minAllocs = min(allocCounts)/req_count
+                maxAllocs = max(allocCounts)/req_count
+                avgAllocs = avg(allocCounts)/req_count
+                minRuntime = min(runtimes)
+                maxRuntime = max(runtimes)
+                avgRuntime = avg(runtimes)
+            fitness_plot_file.write(" %.2f %.2f %.2f" % (avgFitness, minFitness, maxFitness))
+            alloc_count_plot_file.write(" %.2f %.2f %.2f" % (avgAllocs, minAllocs, maxAllocs))
+            runtime_plot_file.write(" %.2f %.2f %.2f" % (avgRuntime, minRuntime, maxRuntime))
+            print("\tAverage fitness: %.2f" % avgFitness)
             print("") # Get us an empty line
         for f in plot_files:
             f.write("\n")
