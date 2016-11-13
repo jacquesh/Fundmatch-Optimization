@@ -85,7 +85,7 @@ if __name__ == "__main__":
             fitness_plot_file.write(" %.2f %.2f %.2f" % (avgFitness, minFitness, maxFitness))
             alloc_count_plot_file.write(" %.2f %.2f %.2f" % (avgAllocs, minAllocs, maxAllocs))
             runtime_plot_file.write(" %.2f %.2f %.2f" % (avgRuntime, minRuntime, maxRuntime))
-            print("\tAverage fitness: %.2f" % avgFitness)
+            print("\tAverage fitness: %.2f" % avg(fitnesses))
             print("") # Get us an empty line
         for f in plot_files:
             f.write("\n")
