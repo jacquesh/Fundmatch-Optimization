@@ -46,8 +46,9 @@ def generate(output_name, src_count=5, req_count=5, bpl_count=2, duration=24, ma
         req_file.write("%d,,%s,%d,%d,,,\n" % (i+1, req_date_str, req_tenor, req_amount))
 
     for i in range(bpl_count):
+        bpl_date_str = dateeval_to_str(start_date)
         bpl_amount = 10 * (min_amount + amount_step_size * randint(0, amount_steps))
-        bpl_file.write("%d,,,,,,,,,%d.0\n" % (i+1, bpl_amount))
+        bpl_file.write("%d,,1,%s,,,,,,%d.0\n" % (i+1, bpl_date_str, bpl_amount))
 
     src_file.close()
     req_file.close()

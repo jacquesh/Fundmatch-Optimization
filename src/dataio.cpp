@@ -97,6 +97,18 @@ bool loadBalancePoolData(const char* inputFilename, InputData& input)
         int balanceID = atoi(csvIn.field(0));
         assert(balanceID == i+1);
 
+        csvIn.copyFieldStr(1, &newInfo.segment);
+        // NOTE: Field 2 is "BalancePoolID", which is always 1, so we left it out
+
+        int day, month, year;
+        sscanf(csvIn.field(3), "%d/%d/%d", &day, &month, &year);
+        newInfo.recordedDate = year*12 + (month-1);
+
+        csvIn.copyFieldStr(4, &newInfo.name);
+        newInfo.recordedAmount = atoi(csvIn.field(5));
+        newInfo.amountLoanedOnRecordedDate = atoi(csvIn.field(6));
+        newInfo.totalAmount = atoi(csvIn.field(7));
+        newInfo.limitPercentage = (float)atof(csvIn.field(8));
         newInfo.amount = (int)atof(csvIn.field(9));
 
         input.balancePools.push_back(newInfo);
@@ -195,6 +207,7 @@ int writeOutputData(InputData input, int allocCount, AllocationPointer* allocati
         snprintf(dateStr, MAX_DATE_STR_LEN, "01-%02d-%04d", month, year);
 
         Jzon::Node sourceNode = Jzon::object();
+        sourceNode.add("ID", sourceID+1);
         sourceNode.add("startDate", dateStr);
         sourceNode.add("tenor", input.sources[sourceID].tenor);
         sourceNode.add("amount", input.sources[sourceID].amount);
@@ -211,6 +224,7 @@ int writeOutputData(InputData input, int allocCount, AllocationPointer* allocati
         snprintf(dateStr, MAX_DATE_STR_LEN, "01-%02d-%04d", month, year);
 
         Jzon::Node reqNode = Jzon::object();
+        reqNode.add("ID", reqID+1);
         reqNode.add("startDate", dateStr);
         reqNode.add("tenor", input.requirements[reqID].tenor);
         reqNode.add("amount", input.requirements[reqID].amount);
@@ -221,7 +235,22 @@ int writeOutputData(InputData input, int allocCount, AllocationPointer* allocati
     Jzon::Node bplNodeList = Jzon::array();
     for(int balanceID=0; balanceID<input.balancePools.size(); balanceID++)
     {
-        // TODO
+        BalancePoolInfo& bpl = input.balancePools[balanceID];
+        int month = (bpl.recordedDate % 12)+1;
+        int year = bpl.recordedDate / 12;
+        snprintf(dateStr, MAX_DATE_STR_LEN, "01-%02d-%04d", month, year);
+
+        Jzon::Node bplNode = Jzon::object();
+        bplNode.add("ID", balanceID+1);
+        bplNode.add("segment", bpl.segment);
+        bplNode.add("recordedDate", dateStr);
+        bplNode.add("name", bpl.name);
+        bplNode.add("recordedAmount", bpl.recordedAmount);
+        bplNode.add("amountLoanedOnRecordedDate", bpl.amountLoanedOnRecordedDate);
+        bplNode.add("totalAmount", bpl.totalAmount);
+        bplNode.add("limitPercentage", bpl.limitPercentage);
+        bplNode.add("amount", bpl.amount);
+        bplNodeList.add(bplNode);
     }
 
     int nonEmptyAllocationCount = 0;

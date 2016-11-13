@@ -33,7 +33,13 @@ struct SourceInfo
 
 struct BalancePoolInfo
 {
-    // TODO: Decide what other values we need here (including for Tim)
+    char* segment;
+    int recordedDate;
+    char* name;
+    int recordedAmount;
+    int amountLoanedOnRecordedDate;
+    int totalAmount;
+    float limitPercentage;
     int amount;
 };
 
