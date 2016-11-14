@@ -124,13 +124,6 @@ void crossoverIndividuals(Vector& individualA, Vector& individualB,
 #endif
 
 #if 0
-    // 1-point crossover
-    uniform_int_distribution<int> randomAllocation(0, allocationCount-1); // Endpoints are inclusive
-    AllocationPointer& alloc = allocations[randomAllocation(rng)];
-    crossoverIndividualAllocation(individualA, individualB, alloc);
-#endif
-
-#if 0
     // N-point crossover
     for(int allocID=0; allocID<allocationCount; allocID++)
     {
