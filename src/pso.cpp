@@ -129,7 +129,7 @@ Vector computeAllocations(int allocationCount, AllocationPointer* allocations)
     // Initialize the swarm
     mt19937 rng(randDevice());
     uniform_real_distribution<float> centredUniformf(-1.0f, 1.0f);
-    uniform_int_distribution<int> uniformi(0, NEIGHBOUR_COUNT);
+    uniform_int_distribution<int> uniformParticleIndex(0, SWARM_SIZE-1); // Endpoints are inclusive
     for(int i=0; i<SWARM_SIZE; i++)
     {
         int retries = 0;
@@ -165,7 +165,7 @@ Vector computeAllocations(int allocationCount, AllocationPointer* allocations)
         swarm[i].neighbours[0] = &swarm[i];
         for(int neighbourIndex=1; neighbourIndex<NEIGHBOUR_COUNT; neighbourIndex++)
         {
-            swarm[i].neighbours[neighbourIndex] = &swarm[uniformi(rng)];
+            swarm[i].neighbours[neighbourIndex] = &swarm[uniformParticleIndex(rng)];
         }
     }
     printf("Initialization complete\n");
