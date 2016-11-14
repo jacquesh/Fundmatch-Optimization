@@ -152,14 +152,9 @@ Vector computeAllocations(int allocationCount, AllocationPointer* allocations)
         // Initialize allocation velocity
         for(int allocID=0; allocID<allocationCount; allocID++)
         {
-            int requirementID = allocations[allocID].requirementIndex;
-            int allocReqStartDate = g_input.requirements[requirementID].startDate;
-            int allocReqTenor = g_input.requirements[requirementID].tenor;
-            int allocReqAmount = g_input.requirements[requirementID].amount;
-
-            float startDateVelocity = centredUniformf(rng) * (float)allocReqTenor;
-            float tenorVelocity = centredUniformf(rng) * (float)allocReqTenor;
-            float amountVelocity = centredUniformf(rng) * (float)allocReqAmount;
+            float startDateVelocity = centredUniformf(rng) * 0.1f;
+            float tenorVelocity = centredUniformf(rng) * 0.1f;
+            float amountVelocity = centredUniformf(rng) * 0.1f;
             allocations[allocID].setStartDate(swarm[i].velocity, startDateVelocity);
             allocations[allocID].setTenor(swarm[i].velocity, tenorVelocity);
             allocations[allocID].setAmount(swarm[i].velocity, amountVelocity);
