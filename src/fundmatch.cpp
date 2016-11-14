@@ -201,7 +201,7 @@ void initializeAllocation(AllocationPointer& alloc, Vector& position,
     float tenor = round(uniformf(rng) * maxValidStartingTenor);
     alloc.setTenor(position, tenor);
 
-    float amount = round(uniformf(rng) * sqrtf(maxAmount));
+    float amount = round(uniformf(rng) * maxAmount);
     alloc.setAmount(position, amount);
 }
 
