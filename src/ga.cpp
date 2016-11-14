@@ -77,6 +77,10 @@ void crossoverIndividuals(Vector& individualA, Vector& individualB,
                           int allocationCount, AllocationPointer* allocations)
 {
     static mt19937 rng(randDevice());
+    uniform_real_distribution<float> uniformf(0.0f, 1.0f);
+
+    if(uniformf(rng) > CROSSOVER_RATE)
+        return;
 
 #if 1
     // Standard crossover (swap one side of a single point)
@@ -113,10 +117,9 @@ void crossoverIndividuals(Vector& individualA, Vector& individualB,
 
 #if 0
     // N-point crossover
-    uniform_real_distribution<float> shouldCrossover(0.0f, 1.0f);
     for(int allocID=0; allocID<allocationCount; allocID++)
     {
-        if(!(shouldCrossover(rng) <= CROSSOVER_RATE))
+        if(uniformf(rng) > 0.5f)
             continue;
 
         AllocationPointer& alloc = allocations[allocID];
