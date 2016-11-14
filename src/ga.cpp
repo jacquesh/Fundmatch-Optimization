@@ -97,7 +97,7 @@ void crossoverIndividuals(Vector& individualA, Vector& individualB,
     if(uniformf(rng) > CROSSOVER_RATE)
         return;
 
-#if 1
+#if 0
     // Standard crossover (swap one side of a single point)
     uniform_int_distribution<int> randomAllocation(0, allocationCount-1); // Endpoints are inclusive
     int middleAllocation = randomAllocation(rng);
@@ -123,7 +123,7 @@ void crossoverIndividuals(Vector& individualA, Vector& individualB,
     }
 #endif
 
-#if 0
+#if 1
     // N-point crossover
     for(int allocID=0; allocID<allocationCount; allocID++)
     {
