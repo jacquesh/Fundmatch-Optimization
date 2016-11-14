@@ -6,8 +6,8 @@
 #include "fundmatch.h"
 
 const int MAX_ITERATIONS = 500;
-const int SWARM_SIZE = 200;
-const int NEIGHBOUR_COUNT = 10;
+const int SWARM_SIZE = 50;
+const int NEIGHBOUR_COUNT = 7;
 
 const float PHI = 4.1f;
 const float SELF_BEST_FACTOR = PHI/2.0f;
