@@ -26,11 +26,11 @@ void mutateIndividual(Vector& individual, int allocCount, AllocationPointer* all
 
     for(int allocID=0; allocID<allocCount; allocID++)
     {
-        float shouldMutate = uniformf(rng);
-        if(!(shouldMutate < MUTATION_RATE))
+        if(uniformf(rng) > MUTATION_RATE)
             continue;
 
         AllocationPointer& alloc = allocations[allocID];
+#if 1 // Single value mutation
         float mutationType = uniformf(rng);
         if(mutationType < 0.333f)
         {
@@ -55,6 +55,21 @@ void mutateIndividual(Vector& individual, int allocCount, AllocationPointer* all
             float newAmount = round(uniformf(rng)*maxAmount);
             alloc.setAmount(individual, newAmount);
         }
+#endif
+#if 0   // Single allocation mutation
+        float minStartDate = alloc.getMinStartDate();
+        float maxStartDate = alloc.getMaxStartDate();
+        float dateRange = maxStartDate - minStartDate;
+        float newStartDate = minStartDate + uniformf(rng)*dateRange;
+        float maxTenor = alloc.getMaxTenor(individual);
+        float newTenor = round(uniformf(rng)*maxTenor);
+        float maxAmount = alloc.getMaxAmount(individual);
+        float newAmount = round(uniformf(rng)*maxAmount);
+
+        alloc.setStartDate(individual, newStartDate);
+        alloc.setTenor(individual, newTenor);
+        alloc.setAmount(individual, newAmount);
+#endif
     }
 }
 
