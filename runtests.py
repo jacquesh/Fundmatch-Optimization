@@ -3,6 +3,7 @@ from os.path import isfile
 import time
 import argparse
 import re
+import os
 
 def avg(lst):
     return sum(lst)/len(lst)
@@ -59,6 +60,10 @@ if __name__ == "__main__":
             for i in range(iterations):
                 startTime = time.time()
                 output = check_output(["./build/%s" % method, data_set]).decode()
+                outputFileName = "output_%s_%s_%d.json" % (method, data_set, i+1)
+                if os.path.exists(outputFileName):
+                    os.remove(outputFileName)
+                os.rename("output.json", outputFileName)
                 endTime = time.time()
                 regexMatch = re.search(r"fitness was (-?\d+\.\d+) from (\d+) allocations", output)
                 fitness = float(regexMatch.group(1))
