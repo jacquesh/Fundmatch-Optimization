@@ -46,7 +46,7 @@ def generate(output_name, src_count=5, req_count=5, bpl_count=2, duration=24, ma
         req_file.write("%d,,%s,%d,%d,,,\n" % (i+1, req_date_str, req_tenor, req_amount))
 
     for i in range(bpl_count):
-        bpl_date_str = dateeval_to_str(start_date)
+        bpl_date_str = dateval_to_str(start_date)
         bpl_amount = 10 * (min_amount + amount_step_size * randint(0, amount_steps))
         bpl_file.write("%d,,1,%s,,,,,,%d.0\n" % (i+1, bpl_date_str, bpl_amount))
 
@@ -56,9 +56,9 @@ def generate(output_name, src_count=5, req_count=5, bpl_count=2, duration=24, ma
 
 
 if __name__ == "__main__":
-    src_count = 80
-    req_count = src_count
+    problem_sizes = [20, 40, 60, 80, 100]
     bpl_count = 2
     duration = 24
     max_tenor = duration
-    generate("DSg_6", src_count, req_count, bpl_count, duration, max_tenor)
+    for index, size in enumerate(problem_sizes):
+        generate("RDS-%d" % (index+1), size, size, bpl_count, duration, max_tenor)
