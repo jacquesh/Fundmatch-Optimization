@@ -5,7 +5,7 @@
 
 #include "fundmatch.h"
 
-const int MAX_ITERATIONS = 500;
+const int MAX_ITERATIONS = 1000;
 const int POPULATION_SIZE = 200;
 
 const float MUTATION_RATE = 1.0f/POPULATION_SIZE;
