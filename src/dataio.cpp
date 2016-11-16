@@ -170,6 +170,7 @@ Vector loadAllocationData(const char* inputFilename, vector<AllocationPointer>& 
     {
         csvIn.readNextEntry();
         AllocationPointer newAlloc = {};
+        newAlloc.allocStartDimension = i*DIMENSIONS_PER_ALLOCATION;
 
         // NOTE: We subtract 1 here because we're using 0-based indices and the data uses 1-based
         newAlloc.requirementIndex = atoi(csvIn.field(1)) - 1;
