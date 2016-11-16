@@ -7,4 +7,5 @@ g++ -c $CompileFlags $HarnessSrcFiles
 g++ $CompileFlags -o build/pso src/pso.cpp $HarnessObjFiles
 g++ $CompileFlags -o build/ga src/ga.cpp $HarnessObjFiles
 g++ $CompileFlags -o build/heuristic src/heuristic.cpp $HarnessObjFiles
+g++ $CompileFlags -o build/worstcase src/worstcase.cpp $HarnessObjFiles
 rm *.o
